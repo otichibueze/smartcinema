@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="pref_load_option_labels">
+        <item>@string/pref_load_popular_label</item>
+        <item>@string/pref_load_top_rated_label</item>
+    </array>
+
+    <array name="pref_load_option_values">
+        <item>@string/pref_load_popular_value</item>
+        <item>@string/pref_load_top_rated_value</item>
+    </array>
+</resources>

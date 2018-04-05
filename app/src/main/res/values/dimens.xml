@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="moviewidth">185dp</dimen>
+    <dimen name="movieheight">278dp</dimen>
+    <dimen name="gridwidth">150dp</dimen>
+    <dimen name="vspacing">0dp</dimen>
+    <dimen name="hspacing">0dp</dimen>
+    <dimen name="text_left_margin">10dp</dimen>
+</resources>

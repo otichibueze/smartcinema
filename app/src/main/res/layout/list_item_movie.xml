@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+  <ImageView
+      android:layout_width="@dimen/moviewidth"
+      android:layout_height="@dimen/movieheight"
+      android:scaleType="centerCrop"
+      android:id="@+id/movie_image"
+      android:contentDescription="@string/movie_detail_image"
+      />
+
+</FrameLayout>

@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">SmartCinema</string>
+    <string name="title">Title</string>
+    <string name="release_date">Release Date</string>
+    <string name="vote_average">Vote Average</string>
+    <string name="plot_synopsis">Plot Synopsis</string>
+    <string name="details_name">Movie Details</string>
+    <string name="setting_title">Settings</string>
+    
+    
+    <string name="load_by">Filter Movies By</string>
+    <string name="pref_sort_key" translatable="false">Sort key</string>
+
+    <string name="pref_load_popular_value" translatable="false">popular</string>
+    <string name="pref_load_top_rated_value" translatable="false">top_rated</string>
+
+    <string name="pref_load_popular_label" translatable="false">Popular</string>
+    <string name="pref_load_top_rated_label" translatable="false">Top Rated</string>
+    <string name="grid_images">Grid Images</string>
+    <string name="movie_detail_image">Movie Detail Image</string>
+
+</resources>
