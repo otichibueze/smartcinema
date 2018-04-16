@@ -19,10 +19,12 @@ import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.chibusoft.smartcinema.Utilities.BoxOfficeMovies;
+import com.chibusoft.smartcinema.Utilities.NetworkUtils;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class MainActivity extends  AppCompatActivity implements
         LoaderManager.LoaderCallbacks<String>, OnSharedPreferenceChangeListener {
@@ -53,12 +55,16 @@ public class MainActivity extends  AppCompatActivity implements
 
     private String sort_movies_by;
 
+    private BoxOfficeMovies boxOfficeMovies;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setupSharedPreferences();
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
+
+       boxOfficeMovies = new BoxOfficeMovies();
 
         // Get a reference to the ListView, and attach this adapter to it.
          gridView =  findViewById(R.id.movies_grid);
@@ -163,7 +169,8 @@ public class MainActivity extends  AppCompatActivity implements
         super.onRestoreInstanceState(savedInstanceState);
 
         if(savedInstanceState == null || !savedInstanceState.containsKey("savedMovies")) {
-            movieList = new ArrayList<>(Arrays.asList(movies));
+           // movieList = new ArrayList<>(Arrays.asList(Movies));
+            movieList = new ArrayList<>();
         }
         else {
             movieList = savedInstanceState.getParcelableArrayList("savedMovies");
@@ -232,7 +239,9 @@ public class MainActivity extends  AppCompatActivity implements
     public void onLoadFinished(Loader<String> loader, String data) {
         mLoadingIndicator.setVisibility(View.INVISIBLE);
         if (data != null && !data.equals("")) {
-           parseJsonDataView( data.toString());
+            movieList = new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList);
+            parseJsonDataView(movieList);
+           // movieList = new ArrayList<>(Arrays.asList(boxOfficeMovies.parseJSON(data).movieList));
         } else {
             showErrorMessage();
         }
@@ -248,12 +257,13 @@ public class MainActivity extends  AppCompatActivity implements
         Toast.makeText(this, "Please check your network" + "\n" + "Could not load data", Toast.LENGTH_LONG).show();
     }
 
-    private void parseJsonDataView(String data)
+    private void parseJsonDataView(ArrayList<Movies> data)
     {
-        movies = JsonUtils.parseMovieJson(data);
-        movieList = new ArrayList<>(Arrays.asList(movies));
+       // movies = JsonUtils.parseMovieJson(data);
+       // movieList = new ArrayList<>(Arrays.asList(movies));
 
-        movieAdapter = new MoviesAdapter(this, movieList);
+
+        movieAdapter = new MoviesAdapter(this, data);
 
         gridView.setAdapter(movieAdapter);
 

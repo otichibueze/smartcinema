@@ -1,4 +1,4 @@
-package com.chibusoft.smartcinema;
+package com.chibusoft.smartcinema.Utilities;
 
 import android.net.Uri;
 
@@ -13,7 +13,7 @@ import java.util.Scanner;
  * Created by EBELE PC on 4/2/2018.
  */
 
-class NetworkUtils {
+public class NetworkUtils {
 
     private static final String BASE_URL ="http://api.themoviedb.org/3/movie";
 
