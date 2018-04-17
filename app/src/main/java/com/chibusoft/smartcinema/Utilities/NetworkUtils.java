@@ -23,7 +23,7 @@ public class NetworkUtils {
 
     public static String SORT_BY = "";
 
-    private final static String API_KEY = "yourkey";
+    private final static String API_KEY = "your_key";
 
     private final static String PARAM_API = "api_key";
 

@@ -1,55 +1,116 @@
 package com.chibusoft.smartcinema;
 
-import android.app.Activity;
+
+import android.content.Context;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-
-
 import com.squareup.picasso.Picasso;
+import java.util.ArrayList;
 
-import java.util.List;
 
 /**
  * Created by EBELE PC on 4/1/2018.
  */
 
-public class MoviesAdapter extends ArrayAdapter<Movies> {
+public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesViewHolder>  {
 
-    public MoviesAdapter(Activity context, List<Movies> movies) {
 
-        super(context, 0, movies);
+    private static final String TAG = MoviesAdapter.class.getSimpleName();
 
+    private int mItems;
+
+    private ArrayList<Movies> mMovieList;
+
+    private Context mContext;
+
+    private final ItemClickListener mOnCLickListener;
+
+    public interface ItemClickListener{
+
+        void onListItemClick(int clickedItemIndex);
     }
 
 
+    public MoviesAdapter(Context context, ArrayList<Movies> movies,ItemClickListener listener) {
+        mMovieList = movies;
+        mContext = context;
+        mOnCLickListener = listener;
+    }
+
+//    public MoviesAdapter(Activity context, List<Movies> movies) {
+//
+//        super(context, 0, movies);
+//
+//    }
+
+
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        // Gets the AndroidFlavor object from the ArrayAdapter at the appropriate position
-        Movies movies = getItem(position);
+    public MoviesViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
+        Context context = viewGroup.getContext();
+        int layoutIdForListItem = R.layout.list_item_movie;
+        LayoutInflater inflater = LayoutInflater.from(context);
+        boolean shouldAttachToParentImmediately = false;
+
+        View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
+        MoviesViewHolder viewHolder = new MoviesViewHolder(view);
+
+        return viewHolder;
+    }
+
+    @Override
+    public void onBindViewHolder(MoviesViewHolder holder, int position) {
+       // Log.d(TAG, "#" + position);
+        holder.bind(position);
+    }
+
+    @Override
+    public int getItemCount() {
+        if(mMovieList == null) return  0;
+
+        mItems = mMovieList.size();
+
+       return mItems;
+    }
 
 
-        if (convertView == null) {
-            convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_movie, parent, false);
+    class MoviesViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
+        ImageView iconView;
+
+        public MoviesViewHolder(View itemView) {
+            super(itemView);
+
+            //Here we set the items in the number_list_item we created eariler
+            //This will also cache the view items
+            iconView = (ImageView) itemView.findViewById(R.id.movie_image);
+
+            itemView.setOnClickListener(this);
         }
 
-        //TextView text = (TextView) convertView.findViewById(R.id.test);
-        //text.setText(movies.getmTitle());
+        void bind(int index) {
+            //Set iconView from picasso
+            Picasso.with(mContext)
+                    .load(mMovieList.get(index).getmPoster_path())
+                    .placeholder(R.drawable.loadingmage)
+                    .error(R.drawable.errorimage)
+                    .into(iconView);
+        }
 
-        ImageView iconView = convertView.findViewById(R.id.movie_image);
-       // iconView.setImageResource(androidFlavor.image);
+        @Override
+        public void onClick(View view)
+        {
+            int clickedPosition = getAdapterPosition();
+            mOnCLickListener.onListItemClick(clickedPosition);
+        }
 
-        //Set iconView from picasso
-        Picasso.with(getContext())
-                .load(movies.getmPoster_path())
-                .placeholder(R.drawable.loadingmage)
-                .error(R.drawable.errorimage)
-                .into(iconView);
+    }
 
-
-        return convertView;
+    public void setData(ArrayList<Movies> movies) {
+        mMovieList = movies;
+        notifyDataSetChanged();
     }
 }
 

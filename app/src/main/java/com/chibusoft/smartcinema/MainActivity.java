@@ -3,19 +3,19 @@ package com.chibusoft.smartcinema;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.content.res.Configuration;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.GridView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -27,7 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class MainActivity extends  AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<String>, OnSharedPreferenceChangeListener {
+        LoaderManager.LoaderCallbacks<String>, OnSharedPreferenceChangeListener, MoviesAdapter.ItemClickListener {
 
 
 
@@ -47,8 +47,6 @@ public class MainActivity extends  AppCompatActivity implements
 
     private MoviesAdapter movieAdapter;
 
-    private GridView gridView;
-
     private ArrayList<Movies> movieList;
 
     private Movies[] movies;
@@ -56,6 +54,10 @@ public class MainActivity extends  AppCompatActivity implements
     private String sort_movies_by;
 
     private BoxOfficeMovies boxOfficeMovies;
+
+    private RecyclerView mMovie_RV;
+
+    private GridLayoutManager gridLayoutManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,21 +68,34 @@ public class MainActivity extends  AppCompatActivity implements
 
        boxOfficeMovies = new BoxOfficeMovies();
 
-        // Get a reference to the ListView, and attach this adapter to it.
-         gridView =  findViewById(R.id.movies_grid);
+       mMovie_RV = (RecyclerView) findViewById(R.id.rv_movies);
 
-        //if (savedInstanceState != null) {
-         //   String queryUrl = savedInstanceState.getString(SEARCH_QUERY_URL);
-        //}
+       //spancount this tell the grid how many columns you want
+        if(this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
+            mMovie_RV.setLayoutManager(new GridLayoutManager(this, 2));
+        }
+        else{
+            mMovie_RV.setLayoutManager(new GridLayoutManager(this, 4));
+        }
+
+        //We set this to true to allows recyclerView to do optimization on our UI
+        mMovie_RV.setHasFixedSize(true);
 
 
+        movieAdapter = new MoviesAdapter(this,movieList,this);
+
+        mMovie_RV.setAdapter(movieAdapter);
 
         /*
          * Initialize the loader
          */
         getSupportLoaderManager().initLoader(MOVIE_LOADER, null, this);
+    }
 
-       // makeMovieSearchQuery();
+    @Override
+    public void onListItemClick(int clickedItemIndex)
+    {
+        launchDetailActivity(clickedItemIndex);
     }
 
     private void setupSharedPreferences() {
@@ -135,7 +150,6 @@ public class MainActivity extends  AppCompatActivity implements
 
 
     private void makeMovieSearchQuery() {
-       // String sortby = "popular"; // set sort by
 
         URL movieSearchUrl = NetworkUtils.buildUrl(sort_movies_by);
 
@@ -169,7 +183,6 @@ public class MainActivity extends  AppCompatActivity implements
         super.onRestoreInstanceState(savedInstanceState);
 
         if(savedInstanceState == null || !savedInstanceState.containsKey("savedMovies")) {
-           // movieList = new ArrayList<>(Arrays.asList(Movies));
             movieList = new ArrayList<>();
         }
         else {
@@ -241,7 +254,6 @@ public class MainActivity extends  AppCompatActivity implements
         if (data != null && !data.equals("")) {
             movieList = new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList);
             parseJsonDataView(movieList);
-           // movieList = new ArrayList<>(Arrays.asList(boxOfficeMovies.parseJSON(data).movieList));
         } else {
             showErrorMessage();
         }
@@ -259,22 +271,7 @@ public class MainActivity extends  AppCompatActivity implements
 
     private void parseJsonDataView(ArrayList<Movies> data)
     {
-       // movies = JsonUtils.parseMovieJson(data);
-       // movieList = new ArrayList<>(Arrays.asList(movies));
-
-
-        movieAdapter = new MoviesAdapter(this, data);
-
-        gridView.setAdapter(movieAdapter);
-
-        //onclick
-        gridView.setOnItemClickListener(new OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                launchDetailActivity(position);
-
-            }
-        });
+        movieAdapter.setData(data);
     }
 
     private void launchDetailActivity(int i)
@@ -292,7 +289,6 @@ public class MainActivity extends  AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Unregister VisualizerActivity as an OnPreferenceChangedListener to avoid any memory leaks.
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
     }

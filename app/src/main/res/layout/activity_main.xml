@@ -6,17 +6,15 @@
     android:layout_height="match_parent"
     tools:context="com.chibusoft.smartcinema.MainActivity">
 
-    <GridView
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/rv_movies"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:columnWidth="@dimen/gridwidth"
-        android:numColumns="auto_fit"
-        android:verticalSpacing="@dimen/vspacing"
-        android:horizontalSpacing="@dimen/hspacing"
-        android:stretchMode="columnWidth"
-        android:id="@+id/movies_grid"
         >
-    </GridView>
+
+    </android.support.v7.widget.RecyclerView>
+
 
 
     <ProgressBar
