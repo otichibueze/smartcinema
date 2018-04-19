@@ -18,5 +18,7 @@
     <string name="pref_load_top_rated_label" translatable="false">Top Rated</string>
     <string name="grid_images">Grid Images</string>
     <string name="movie_detail_image">Movie Detail Image</string>
+    <string name="trailer">TRAILERS</string>
+    <string name="reviews">REVIEWS</string>
 
 </resources>

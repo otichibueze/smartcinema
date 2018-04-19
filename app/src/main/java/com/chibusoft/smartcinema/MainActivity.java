@@ -37,7 +37,7 @@ public class MainActivity extends  AppCompatActivity implements
 
     private ProgressBar mLoadingIndicator;
 
-
+    public static final String ID = "ID";
     public static final String TITLE = "TITLE";
     public static final String POSTER = "POSTER";
     public static final String OVERVIEW = "OVERVIEW";
@@ -66,6 +66,7 @@ public class MainActivity extends  AppCompatActivity implements
         setupSharedPreferences();
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
 
+        //Create new instance of Gson class
        boxOfficeMovies = new BoxOfficeMovies();
 
        mMovie_RV = (RecyclerView) findViewById(R.id.rv_movies);
@@ -107,8 +108,7 @@ public class MainActivity extends  AppCompatActivity implements
     }
 
     private void loadFromPreferences(SharedPreferences sharedPreferences) {
-        sort_movies_by = sharedPreferences.getString(getString(R.string.pref_sort_key),
-                getResources().getString(R.string.pref_load_popular_value));
+        sort_movies_by = sharedPreferences.getString(getString(R.string.pref_sort_key), getResources().getString(R.string.pref_load_popular_value));
 
         makeMovieSearchQuery();
 
@@ -277,6 +277,7 @@ public class MainActivity extends  AppCompatActivity implements
     private void launchDetailActivity(int i)
     {
         Intent intent = new Intent(this , DetailsActivity.class);
+        intent.putExtra(ID,movieList.get(i).getmId());
         intent.putExtra(TITLE, movieList.get(i).getmTitle());
         intent.putExtra(POSTER, movieList.get(i).getmPoster_path());
         intent.putExtra(OVERVIEW, movieList.get(i).getmOverview());

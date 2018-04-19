@@ -12,7 +12,7 @@ import com.google.gson.annotations.SerializedName;
 public class Movies implements Parcelable {
 
     @SerializedName("id")
-    private int mId;
+    private String mId;
 
     @SerializedName("vote_average")
     private double mVote_average;
@@ -43,11 +43,11 @@ public class Movies implements Parcelable {
 
     Movies(){}
 
-    public int getmId() {
+    public String getmId() {
         return mId;
     }
 
-    public void setmId(int mId) {
+    public void setmId(String mId) {
         this.mId = mId;
     }
 
@@ -97,7 +97,7 @@ public class Movies implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeInt(mId);
+        parcel.writeString(mId);
         parcel.writeString(mTitle);
         parcel.writeString(mPoster_path);
         parcel.writeString(mOverview);

@@ -4,7 +4,6 @@ package com.chibusoft.smartcinema.Utilities;
  * Created by EBELE PC on 4/16/2018.
  */
 
-
 import com.chibusoft.smartcinema.Movies;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -20,6 +19,7 @@ public class BoxOfficeMovies
    public List<Movies> movieList;
 
 
+
      public BoxOfficeMovies()
     {
         movieList = new ArrayList<>();
@@ -31,5 +31,6 @@ public class BoxOfficeMovies
 
         return boxOfficeMovies;
     }
+
 
 }

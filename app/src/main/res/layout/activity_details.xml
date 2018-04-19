@@ -1,18 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView android:layout_width="match_parent"
+
+
+<ScrollView
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+   >
 
     <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         tools:context="com.chibusoft.smartcinema.DetailsActivity">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:orientation="horizontal"
        >
@@ -73,7 +78,7 @@
     <TextView
         android:id="@+id/vote"
         android:text="@string/vote_average"
-        android:layout_marginLeft="@dimen/text_left_margin"
+        android:layout_marginLeft="@dimen/text_margin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="left"
@@ -83,7 +88,7 @@
 
     <TextView
         android:id="@+id/vote_details"
-        android:layout_marginLeft="@dimen/text_left_margin"
+        android:layout_marginLeft="@dimen/text_margin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
@@ -91,7 +96,7 @@
     <TextView
         android:id="@+id/synopsis"
         android:text="@string/plot_synopsis"
-        android:layout_marginLeft="@dimen/text_left_margin"
+        android:layout_marginLeft="@dimen/text_margin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="left"
@@ -99,12 +104,63 @@
         android:layout_marginTop="10dp"
         />
 
+
     <TextView
         android:id="@+id/synopsis_details"
-        android:layout_marginLeft="@dimen/text_left_margin"
+        android:layout_marginLeft="@dimen/text_margin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         />
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:textStyle="bold"
+            android:background="@android:color/darker_gray"
+            android:layout_marginTop="15dp"
+            />
+
+        <TextView
+            android:id="@+id/trailer_label"
+            android:text="@string/trailer"
+            android:layout_marginLeft="@dimen/text_margin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:textStyle="bold"
+            />
+
+
+        <ListView
+            android:id="@+id/listview_trailer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:textStyle="bold"
+            android:background="@android:color/darker_gray"
+            android:layout_marginTop="15dp"
+            />
+
+        <TextView
+            android:text="@string/reviews"
+            android:layout_marginLeft="@dimen/text_margin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left"
+            android:textStyle="bold"
+            />
+
+
+        <ListView
+            android:id="@+id/listview_reviews"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+
 </LinearLayout>
-    </ScrollView>
+</ScrollView>
+

@@ -17,19 +17,17 @@ public class NetworkUtils {
 
     private static final String BASE_URL ="http://api.themoviedb.org/3/movie";
 
-    //final static String POPULAR = "popular";
-
-    //final static String TOP_RATED = "top_rated";
-
     public static String SORT_BY = "";
 
     private final static String API_KEY = "your_key";
 
     private final static String PARAM_API = "api_key";
 
+    private final static String VIDEO = "videos";
+
+    private final static String REVIEWS = "reviews";
 
 
-    //need to set by setting
     public static URL buildUrl(String sortby) {
         SORT_BY = sortby;
 
@@ -50,6 +48,48 @@ public class NetworkUtils {
 
         return url;
     }
+
+    public static URL buildUrlVideo(String id) {
+
+        Uri buildUri = Uri.parse(BASE_URL).buildUpon()
+                .appendPath(id)
+                .appendPath(VIDEO)
+                .appendQueryParameter(PARAM_API,API_KEY)
+                .build();
+
+        URL url = null;
+        try
+        {
+            url = new URL(buildUri.toString());
+        }catch (MalformedURLException e)
+        {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
+    public static URL buildUrlReviews(String id) {
+
+        Uri buildUri = Uri.parse(BASE_URL).buildUpon()
+                .appendPath(id)
+                .appendPath(REVIEWS)
+                .appendQueryParameter(PARAM_API,API_KEY)
+                .build();
+
+        URL url = null;
+        try
+        {
+            url = new URL(buildUri.toString());
+        }catch (MalformedURLException e)
+        {
+            e.printStackTrace();
+        }
+
+        return url;
+    }
+
+
 
     public static String getResponseFromHttpUrl(URL url) throws IOException {
         HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
