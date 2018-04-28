@@ -15,7 +15,7 @@ import java.util.Scanner;
 
 public class NetworkUtils {
 
-    private static final String BASE_URL ="http://api.themoviedb.org/3/movie";
+    private static final String BASE_URL ="https://api.themoviedb.org/3/movie";
 
     public static String SORT_BY = "";
 

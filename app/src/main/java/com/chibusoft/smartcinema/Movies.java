@@ -30,10 +30,11 @@ public class Movies implements Parcelable {
     private String mRelease_date;
 
 
-    private final String BASE_PATH = "http://image.tmdb.org/t/p/w185";
+    private final String BASE_PATH = "https://image.tmdb.org/t/p/w185";
 
     private Movies(Parcel in)
     {
+        mId = in.readString();
         mTitle = in.readString();
         mPoster_path = in.readString();
         mOverview = in.readString();

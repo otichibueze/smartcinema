@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -19,8 +20,10 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.chibusoft.smartcinema.Data.MovieDbHelper;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeMovies;
 import com.chibusoft.smartcinema.Utilities.NetworkUtils;
+import com.facebook.stetho.Stetho;
 
 import java.io.IOException;
 import java.net.URL;
@@ -59,6 +62,7 @@ public class MainActivity extends  AppCompatActivity implements
 
     private GridLayoutManager gridLayoutManager;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -78,6 +82,7 @@ public class MainActivity extends  AppCompatActivity implements
         else{
             mMovie_RV.setLayoutManager(new GridLayoutManager(this, 4));
         }
+
 
         //We set this to true to allows recyclerView to do optimization on our UI
         mMovie_RV.setHasFixedSize(true);
