@@ -223,7 +223,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
             }
 
-            Toast.makeText(getBaseContext(), String.format(result), Toast.LENGTH_LONG).show();
+            Toast.makeText(getBaseContext(), result, Toast.LENGTH_LONG).show();
 
         }
         else
@@ -241,7 +241,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
             int delVideo = getContentResolver().delete(uriVideo, null, null);
 
-            Toast.makeText(getBaseContext(), String.format(result), Toast.LENGTH_LONG).show();
+            Toast.makeText(getBaseContext(), result, Toast.LENGTH_LONG).show();
         }
 
         showFavorite(isFavorite);
