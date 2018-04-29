@@ -40,11 +40,11 @@ public class MovieReviewsAdapter extends ArrayAdapter<MovieReviews> {
         }
 
 
-        TextView authorItem = (TextView) convertView.findViewById(R.id.author_text);
+        TextView authorItem = convertView.findViewById(R.id.author_text);
         authorItem.setText(movieReviews.getAuthor());
 
 
-        TextView commentItem = (TextView) convertView.findViewById(R.id.comment_text);
+        TextView commentItem = convertView.findViewById(R.id.comment_text);
         commentItem.setText(movieReviews.getContent());
 
         return convertView;

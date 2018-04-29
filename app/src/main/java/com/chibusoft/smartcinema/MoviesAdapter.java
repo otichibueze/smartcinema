@@ -9,6 +9,8 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import com.squareup.picasso.Picasso;
+
+import java.io.File;
 import java.util.ArrayList;
 
 
@@ -20,8 +22,6 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
 
 
     private static final String TAG = MoviesAdapter.class.getSimpleName();
-
-    private int mItems;
 
     private ArrayList<Movies> mMovieList;
 
@@ -53,9 +53,8 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
         Context context = viewGroup.getContext();
         int layoutIdForListItem = R.layout.list_item_movie;
         LayoutInflater inflater = LayoutInflater.from(context);
-        boolean shouldAttachToParentImmediately = false;
 
-        View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
+        View view = inflater.inflate(layoutIdForListItem, viewGroup, false);
         MoviesViewHolder viewHolder = new MoviesViewHolder(view);
 
         return viewHolder;
@@ -71,7 +70,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
     public int getItemCount() {
         if(mMovieList == null) return  0;
 
-        mItems = mMovieList.size();
+        int mItems = mMovieList.size();
 
        return mItems;
     }
@@ -85,18 +84,29 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
 
             //Here we set the items in the number_list_item we created eariler
             //This will also cache the view items
-            iconView = (ImageView) itemView.findViewById(R.id.movie_image);
+            iconView = itemView.findViewById(R.id.movie_image);
 
             itemView.setOnClickListener(this);
         }
 
         void bind(int index) {
             //Set iconView from picasso
-            Picasso.with(mContext)
-                    .load(mMovieList.get(index).getmPoster_path())
-                    .placeholder(R.drawable.loadingmage)
-                    .error(R.drawable.errorimage)
-                    .into(iconView);
+
+            if(MainActivity.load_Type == 1) {
+                Picasso.with(mContext)
+                        .load(mMovieList.get(index).getmPoster_path())
+                        .placeholder(R.drawable.loadingmage)
+                        .error(R.drawable.errorimage)
+                        .into(iconView);
+            }
+            else
+            {
+                Picasso.with(mContext)
+                        .load(new File(mMovieList.get(index).getmPoster()))
+                        .placeholder(R.drawable.loadingmage)
+                        .error(R.drawable.errorimage)
+                        .into(iconView);
+            }
         }
 
         @Override

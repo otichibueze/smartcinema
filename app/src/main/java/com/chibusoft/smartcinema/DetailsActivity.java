@@ -5,7 +5,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.app.NavUtils;
@@ -14,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.MeasureSpec;
@@ -33,7 +35,7 @@ import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.widget.Toast;
 
-import com.chibusoft.smartcinema.Data.MovieContract;
+
 import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
 import com.chibusoft.smartcinema.Data.MovieContract.MovieReviewsEntry;
 import com.chibusoft.smartcinema.Data.MovieContract.MovieVideosEntry;
@@ -41,18 +43,20 @@ import com.chibusoft.smartcinema.Utilities.BoxOfficeReviews;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeVideos;
 import com.chibusoft.smartcinema.Utilities.NetworkUtils;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
 
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-//implements LoaderManager.LoaderCallbacks<String>
+
 public class DetailsActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<String> {
 
     @BindView(R.id.title_details)
@@ -76,29 +80,32 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
     private static final int IS_FAVORITE_LOADER = 18;
 
+    private static final int REVIEW_FAVORITE_LOADER = 16;
+
+    private static final int VIDEO_FAVORITE_LOADER = 14;
+
     private static final String ID_SEARCH_QUERY = "id_query";
 
     private String mID;
+
+    private int load_Type;
 
     private static final int VIDEO_SEARCH_LOADER = 22;
 
     private static final String VIDEO_SEARCH_QUERY = "video_query";
 
-    private ArrayList<MovieVideos> movieVideos;
+    private ArrayList<MovieVideos> movieVideoList;
 
     private BoxOfficeVideos boxOfficeVideos;
+
 
     private static final int REVIEWS_SEARCH_LOADER = 20;
 
     private static final String REVIEWS_SEARCH_QUERY = "reviews_query";
 
-    private ArrayList<MovieReviews> movieReviews;
+    private ArrayList<MovieReviews> movieReviewList;
 
     private BoxOfficeReviews boxOfficeReviews;
-
-    private MovieVideosAdapter movieVideosAdapter;
-
-    private MovieReviewsAdapter movieReviewsAdapter;
 
     private ListView listViewVideo;
 
@@ -121,27 +128,20 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
         Intent intent = getIntent();
 
+        if(intent.hasExtra(MainActivity.LOAD_TYPE))
+            load_Type = intent.getIntExtra(MainActivity.LOAD_TYPE, 1);
+
         if (intent.hasExtra(MainActivity.ID)) {
             mID = intent.getStringExtra(MainActivity.ID);
-            makeReviewSearchQuery(mID);
-            makeVideoSearchQuery(mID);
-           loadIsFavorite(mID);
         }
 
         if (intent.hasExtra(MainActivity.TITLE))
             title.setText(intent.getStringExtra(MainActivity.TITLE));
 
-        if (intent.hasExtra(MainActivity.POSTER)) {
+        if (intent.hasExtra(MainActivity.POSTER))
             image_link = intent.getStringExtra(MainActivity.POSTER);
 
-            Picasso.with(this)
-                    .load(image_link)
-                    .placeholder(R.drawable.loadingmage)
-                    .error(R.drawable.errorimage)
-                    .into(movieimage);
-        }
-
-        if (intent.hasExtra(MainActivity.OVERVIEW))
+            if (intent.hasExtra(MainActivity.OVERVIEW))
             synopsis.setText(intent.getStringExtra(MainActivity.OVERVIEW));
 
         if (intent.hasExtra(MainActivity.RELEASE))
@@ -150,17 +150,53 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         if (intent.hasExtra(MainActivity.AVERAGE))
             vote.setText(String.valueOf(intent.getDoubleExtra(MainActivity.AVERAGE, 0)));
 
+        if(load_Type == 1)
+        {
+            makeReviewSearchQuery(mID);
+            makeVideoSearchQuery(mID);
+            loadIsFavorite(mID);
+
+                Picasso.with(this)
+                        .load(image_link)
+                        .placeholder(R.drawable.loadingmage)
+                        .error(R.drawable.errorimage)
+                        .into(movieimage);
+
+        }
+        else if(load_Type == 2)
+        {
+            loadIsFavorite(mID);
+            loadIsFavoriteReview(mID);
+            loadIsFavoriteVideo(mID);
+
+            Picasso.with(this)
+                    .load(new File(image_link))
+                    .placeholder(R.drawable.loadingmage)
+                    .error(R.drawable.errorimage)
+                    .into(movieimage);
+        }
+
+        //Picasso.with(context).load(new File(path)).into(imageView);
+
         boxOfficeVideos = new BoxOfficeVideos();
 
         boxOfficeReviews = new BoxOfficeReviews();
 
-        listViewVideo = (ListView) findViewById(R.id.listview_trailer);
+        listViewVideo = findViewById(R.id.listview_trailer);
 
-        listViewReview = (ListView) findViewById(R.id.listview_reviews);
+        listViewReview = findViewById(R.id.listview_reviews);
 
         //isFavorite = false;
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        getMenuInflater().inflate(R.menu.details, menu);
+        return true;
+    }
+
 
     public void showFavorite(boolean value)
     {
@@ -172,7 +208,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
     public void addFavorite(View v) {
         String result = "Added to Favorites";
-        isFavorite = isFavorite == true ? false : true;
+        isFavorite = isFavorite ? false : true;
 
         if (isFavorite) {
             ContentValues contentValues = new ContentValues();
@@ -186,40 +222,81 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
             contentValues.put(MovieEntry.COLUMN_VOTE_AVERAGE, vote.getText().toString());
             contentValues.put(MovieEntry.COLUMN_FAVORITE, isFavorite);
 
+            //save picture to internal memory
+            final String[] picturePath = new String[1];
+            Picasso.with(this)
+                    .load(image_link)
+                    .into(new Target() {
+                              @Override
+                              public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                                  try {
+                                      File internalStorage = getApplicationContext().getDir("Pictures", Context.MODE_PRIVATE);
+
+                                      if (!internalStorage.exists()) {
+                                          internalStorage.mkdirs();
+                                      }
+
+                                      File pictureFilePath = new File(internalStorage,
+                                              mID + ".jpg");
+                                      picturePath[0] = pictureFilePath.toString();
+
+                                      FileOutputStream out = new FileOutputStream(pictureFilePath);
+                                      bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);
+
+                                      out.flush();
+                                      out.close();
+                                  } catch(Exception e){
+                                      Log.e(TAG, "Problem updating picture", e);
+                                  }
+                              }
+
+
+                              @Override
+                              public void onBitmapFailed(Drawable errorDrawable) {
+                              }
+
+                              @Override
+                              public void onPrepareLoad(Drawable placeHolderDrawable) {
+                              }
+                          }
+                    );
+
+            //save picture path to database
+            contentValues.put(MovieEntry.COLUMN_POSTER_PATH, picturePath[0]);
+
             Uri uri = getContentResolver().insert(MovieEntry.CONTENT_URI, contentValues);
 
             if (uri != null) {
-                result = "Added " + title.getText() + " to favorites and %1s videos and %2s reviews";
                 contentValues.clear();
             }
 
             int rowsVid = 0;
-            if(movieVideos.size() > 0) {
-                ContentValues[] contentValuesVideos = new ContentValues[movieVideos.size()];
+            if(movieVideoList.size() > 0) {
+                ContentValues[] contentValuesVideos = new ContentValues[movieVideoList.size()];
 
-                for (int i = 0; i < movieVideos.size(); i++) {
+                for (int i = 0; i < movieVideoList.size(); i++) {
                     contentValuesVideos[i] = new ContentValues();
                     contentValuesVideos[i].put(MovieVideosEntry.COLUMN_ID, mID);
-                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_KEY, movieVideos.get(i).getKey());
-                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_TYPE, movieVideos.get(i).getType());
+                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_KEY, movieVideoList.get(i).getKey());
+                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_TYPE, movieVideoList.get(i).getType());
                 }
 
-                rowsVid = getContentResolver().bulkInsert(MovieVideosEntry.CONTENT_URI, contentValuesVideos);
+                getContentResolver().bulkInsert(MovieVideosEntry.CONTENT_URI, contentValuesVideos);
 
             }
 
             int rowsReviews = 0;
-            if(movieReviews!= null && movieReviews.size() > 0) {
-                ContentValues[] contentValuesReviews = new ContentValues[movieReviews.size()];
+            if(movieReviewList!= null && movieReviewList.size() > 0) {
+                ContentValues[] contentValuesReviews = new ContentValues[movieReviewList.size()];
 
-                for (int i = 0; i < movieReviews.size(); i++) {
+                for (int i = 0; i < movieReviewList.size(); i++) {
                     contentValuesReviews[i] = new ContentValues();
                     contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_ID, mID);
-                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_AUTHOR, movieReviews.get(i).getAuthor());
-                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_CONTENT, movieReviews.get(i).getContent());
+                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_AUTHOR, movieReviewList.get(i).getAuthor());
+                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_CONTENT, movieReviewList.get(i).getContent());
                 }
 
-                rowsReviews = getContentResolver().bulkInsert(MovieReviewsEntry.CONTENT_URI, contentValuesReviews);
+                 getContentResolver().bulkInsert(MovieReviewsEntry.CONTENT_URI, contentValuesReviews);
 
             }
 
@@ -230,6 +307,13 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         {
             result = "Removed from Favorites";
             Uri uri = MovieEntry.CONTENT_URI.buildUpon().appendPath(mID).build();
+
+            //Delete picture from local storage
+            String picturePath = image_link; // See above
+            if (picturePath != null && picturePath.length() != 0) {
+                File FilePath = new File(picturePath);
+                FilePath.delete();
+            }
 
             int delMovie = getContentResolver().delete(uri, null, null);
 
@@ -254,6 +338,24 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         if (id == android.R.id.home) {
             NavUtils.navigateUpFromSameTask(this);
         }
+       else if(id == R.id.action_share)
+        {
+
+            if(movieVideoList.size() > 0)
+            {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_SUBJECT, title.getText().toString());
+                intent.putExtra(Intent.EXTRA_TEXT, VIDEO_LINK + movieVideoList.get(0).key);
+                startActivity(Intent.createChooser(intent, "Share " + title.getText().toString() + " Trailer"));
+            }
+            else
+            {
+                Toast.makeText(this,  title.getText().toString() + " has not trailer to share", Toast.LENGTH_LONG).show();
+            }
+
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -264,16 +366,9 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
     private void parseJsonDataVideo(ArrayList<MovieVideos> data)
     {
-        for(int i = data.size() - 1; i > -1; i--)
-        {
-            if(!data.get(i).type.equals("Trailer")) {
-                data.remove(i);
-            }
-        }
+        movieVideoList = data;
 
-        movieVideos = data;
-
-        movieVideosAdapter = new MovieVideosAdapter(this, movieVideos);
+        MovieVideosAdapter movieVideosAdapter = new MovieVideosAdapter(this, movieVideoList);
 
         listViewVideo.setAdapter(movieVideosAdapter);
 
@@ -293,7 +388,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         listViewVideo.setOnItemClickListener(new OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                      String key = movieVideos.get(position).getKey();
+                      String key = movieVideoList.get(position).getKey();
                       String weblink = VIDEO_LINK + key;
                       openWebPage(weblink);
             }
@@ -312,7 +407,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
     private void parseJsonDataReview(ArrayList<MovieReviews> data)
     {
-        movieReviewsAdapter = new MovieReviewsAdapter(this, data);
+        MovieReviewsAdapter movieReviewsAdapter = new MovieReviewsAdapter(this, data);
 
         listViewReview.setAdapter(movieReviewsAdapter);
         movieReviewsAdapter.notifyDataSetChanged();
@@ -468,16 +563,24 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         int loaderID = loader.getId();
         if(loaderID == VIDEO_SEARCH_LOADER) {
             if (data != null && !data.equals("")) {
-                movieVideos = new ArrayList<>(boxOfficeVideos.parseJSON(data).movieVideosList);
-                parseJsonDataVideo(movieVideos);
+                movieVideoList = new ArrayList<>(boxOfficeVideos.parseJSON(data).movieVideosList);
+
+                for(int i = movieVideoList.size() - 1; i > -1; i--)
+                {
+                    if(!movieVideoList.get(i).type.equals("Trailer")) {
+                        movieVideoList.remove(i);
+                    }
+                }
+
+                parseJsonDataVideo(movieVideoList);
             } else {
                 showErrorMessage();
             }
         }
         if(loaderID == REVIEWS_SEARCH_LOADER) {
             if (data != null && !data.equals("")) {
-                movieReviews = new ArrayList<>(boxOfficeReviews.parseJSON(data).movieReviewsList);
-                parseJsonDataReview(movieReviews);
+                movieReviewList = new ArrayList<>(boxOfficeReviews.parseJSON(data).movieReviewsList);
+                parseJsonDataReview(movieReviewList);
 
             } else {
                 showErrorMessage();
@@ -509,6 +612,44 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         }
     }
 
+    private void loadIsFavoriteReview(String id)
+    {
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(ID_SEARCH_QUERY,id);
+
+        LoaderManager loaderManager = getSupportLoaderManager();
+
+        Loader<Cursor> review_favorite = loaderManager.getLoader(REVIEW_FAVORITE_LOADER);
+
+        if(review_favorite == null)
+        {
+            loaderManager.initLoader(REVIEW_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
+        }
+        else
+        {
+            loaderManager.restartLoader(REVIEW_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
+        }
+    }
+
+    private void loadIsFavoriteVideo(String id)
+    {
+        Bundle queryBundle = new Bundle();
+        queryBundle.putString(ID_SEARCH_QUERY,id);
+
+        LoaderManager loaderManager = getSupportLoaderManager();
+
+        Loader<Cursor> video_favorite = loaderManager.getLoader(VIDEO_FAVORITE_LOADER);
+
+        if(video_favorite == null)
+        {
+            loaderManager.initLoader(VIDEO_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
+        }
+        else
+        {
+            loaderManager.restartLoader(VIDEO_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
+        }
+    }
+
 
 
 
@@ -522,6 +663,8 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                 int loaderID = id;
                 // Initialize a Cursor, this will hold all the task data
                 Cursor mData = null;
+                Cursor mDataReview = null;
+                Cursor mDataVideo = null;
 
                 // onStartLoading() is called when a loader first starts loading data
                 @Override
@@ -563,13 +706,51 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                             return null;
                         }
                     }
+                    if(loaderID == REVIEW_FAVORITE_LOADER)
+                    {
+                        String searchId = args.getString(ID_SEARCH_QUERY);
+
+                        Uri uri = MovieReviewsEntry.CONTENT_URI.buildUpon().appendPath(searchId).build();
+                        try {
+                            return getContentResolver().query(uri,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to asynchronously load data.");
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }
+                    if(loaderID == VIDEO_FAVORITE_LOADER)
+                    {
+                        String searchId = args.getString(ID_SEARCH_QUERY);
+
+                        Uri uri = MovieVideosEntry.CONTENT_URI.buildUpon().appendPath(searchId).build();
+                        try {
+                            return getContentResolver().query(uri,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to asynchronously load data.");
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }
 
                     return null;
                 }
+
                 // deliverResult sends the result of the load, a Cursor, to the registered listener
                 public void deliverResult(Cursor data) {
-                    if(loaderID == IS_FAVORITE_LOADER)
-                        mData = data;
+                    if(loaderID == IS_FAVORITE_LOADER) mData = data;
+                    if(loaderID == REVIEW_FAVORITE_LOADER) mDataReview = data;
+                    if(loaderID == VIDEO_FAVORITE_LOADER) mDataVideo = data;
                     super.deliverResult(data);
                 }
             };
@@ -589,16 +770,53 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                     cursor.moveToFirst();
 
                     isFavorite = cursor.getInt(favorite_column) > 0;
-
-
                 }
                 else {
-
-
                     isFavorite = false;
                 }
-
                 showFavorite(isFavorite);
+            }
+            if(loaderID == REVIEW_FAVORITE_LOADER)
+            {
+                if(cursor.getCount() > 0)
+                {
+                    int author_Column = cursor.getColumnIndex(MovieReviewsEntry.COLUMN_AUTHOR);
+                    int content_Column = cursor.getColumnIndex(MovieReviewsEntry.COLUMN_CONTENT);
+
+                    movieReviewList = new ArrayList<>();
+                   while (cursor.moveToNext())
+                   {
+                       String author = cursor.getString(author_Column);
+                       String content = cursor.getString(content_Column);
+
+                       MovieReviews movieReviews = new MovieReviews(author,content);
+                       movieReviewList.add(movieReviews);
+                   }
+
+                   parseJsonDataReview(movieReviewList);
+
+                }
+            }
+            if(loaderID == VIDEO_FAVORITE_LOADER)
+            {
+                if(cursor.getCount() > 0)
+                {
+                    int key_Column = cursor.getColumnIndex(MovieVideosEntry.COLUMN_KEY);
+                    int type_Column = cursor.getColumnIndex(MovieVideosEntry.COLUMN_TYPE);
+
+                    movieVideoList = new ArrayList<>();
+                    while (cursor.moveToNext())
+                    {
+                        String key = cursor.getString(key_Column);
+                        String type = cursor.getString(type_Column);
+
+                        MovieVideos movieVideos = new MovieVideos(key,type);
+                        movieVideoList.add(movieVideos);
+                    }
+
+                    parseJsonDataVideo(movieVideoList);
+
+                }
             }
         }
 

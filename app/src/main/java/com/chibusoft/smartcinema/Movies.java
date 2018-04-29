@@ -5,6 +5,7 @@ import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
 
 
+
 /**
  * Created by EBELE PC on 4/1/2018.
  */
@@ -44,6 +45,15 @@ public class Movies implements Parcelable {
 
     Movies(){}
 
+    Movies(String id,String title,String Poster,String overview,String release_date,Double vote){
+        mId = id;
+        mTitle = title;
+        mPoster_path = Poster;
+        mOverview =overview;
+        mRelease_date = release_date;
+        mVote_average = vote;
+    }
+
     public String getmId() {
         return mId;
     }
@@ -62,6 +72,10 @@ public class Movies implements Parcelable {
 
     public String getmPoster_path() {
         return BASE_PATH + mPoster_path;
+    }
+
+    public String getmPoster() {
+        return  mPoster_path;
     }
 
 

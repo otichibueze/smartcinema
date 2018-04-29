@@ -4,7 +4,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
@@ -12,17 +14,17 @@ import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.RecyclerView.OnScrollListener;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
+import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeMovies;
 import com.chibusoft.smartcinema.Utilities.NetworkUtils;
-
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,7 +36,11 @@ public class MainActivity extends  AppCompatActivity implements
 
     private static final int MOVIE_LOADER = 1;
 
+    private static final int MOVIE_LOADER_PAGE = 2;
+
     private static final String SEARCH_QUERY_URL = "query";
+    private static final int FAVORITE_LOADER = 4;
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     private ProgressBar mLoadingIndicator;
 
@@ -44,6 +50,7 @@ public class MainActivity extends  AppCompatActivity implements
     public static final String OVERVIEW = "OVERVIEW";
     public static final String RELEASE = "RELEASE";
     public static final String AVERAGE = "AVERAGE";
+    public static final String LOAD_TYPE = "LOAD";
 
 
     private MoviesAdapter movieAdapter;
@@ -52,11 +59,15 @@ public class MainActivity extends  AppCompatActivity implements
 
     private Movies[] movies;
 
+    public static int load_Type = 1;
+
     private String sort_movies_by;
 
     private BoxOfficeMovies boxOfficeMovies;
 
-    private RecyclerView mMovie_RV;
+    private int page = 1;
+
+    private boolean isLoadPage = false;
 
     private GridLayoutManager gridLayoutManager;
 
@@ -71,7 +82,7 @@ public class MainActivity extends  AppCompatActivity implements
         //Create new instance of Gson class
        boxOfficeMovies = new BoxOfficeMovies();
 
-       mMovie_RV = (RecyclerView) findViewById(R.id.rv_movies);
+        RecyclerView mMovie_RV = findViewById(R.id.rv_movies);
 
        //spancount this tell the grid how many columns you want
         if(this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
@@ -90,6 +101,39 @@ public class MainActivity extends  AppCompatActivity implements
 
         mMovie_RV.setAdapter(movieAdapter);
 
+        mMovie_RV.addOnScrollListener(new OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+
+                //directions -1 for up, 1 for down
+                //this code will only run wen we scroll to the end down because we used 1
+                //if we used -1 will run when we hit the end up
+                if(!recyclerView.canScrollVertically(1))
+                {
+                    if(load_Type == 1 && page < 5 && !isLoadPage)
+                    {
+                        page +=1;
+                        isLoadPage = true;
+                        URL movieSearchUrl = NetworkUtils.buildUrlPage(String.valueOf(page));
+
+                        Bundle queryBundle = new Bundle();
+                        queryBundle.putString(SEARCH_QUERY_URL, movieSearchUrl.toString());
+
+
+                        LoaderManager loaderManager = getSupportLoaderManager();
+
+                        Loader<String> movieSearchLoader = loaderManager.getLoader(MOVIE_LOADER);
+                        if (movieSearchLoader == null) {
+                            loaderManager.initLoader(MOVIE_LOADER_PAGE, queryBundle, MainActivity.this);
+                        } else {
+                            loaderManager.restartLoader(MOVIE_LOADER_PAGE, queryBundle, MainActivity.this);
+                        }
+                    }
+                }
+            }
+        });
+
         /*
          * Initialize the loader
          */
@@ -105,15 +149,16 @@ public class MainActivity extends  AppCompatActivity implements
     private void setupSharedPreferences() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
         loadFromPreferences(sharedPreferences);
 
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
     }
 
     private void loadFromPreferences(SharedPreferences sharedPreferences) {
         sort_movies_by = sharedPreferences.getString(getString(R.string.pref_sort_key), getResources().getString(R.string.pref_load_popular_value));
 
-        makeMovieSearchQuery();
+        makeMovieSearchQuery(sort_movies_by);
 
     }
 
@@ -122,7 +167,6 @@ public class MainActivity extends  AppCompatActivity implements
         if(s.equals(getString(R.string.pref_sort_key)))
         {
             loadFromPreferences(sharedPreferences);
-
         }
     }
 
@@ -151,25 +195,49 @@ public class MainActivity extends  AppCompatActivity implements
 
     }
 
-
-    private void makeMovieSearchQuery() {
-
-        URL movieSearchUrl = NetworkUtils.buildUrl(sort_movies_by);
-
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(SEARCH_QUERY_URL,movieSearchUrl.toString());
-
-
+    private  void startFavoriteLoader()
+    {
         LoaderManager loaderManager = getSupportLoaderManager();
 
-        Loader<String> movieSearchLoader = loaderManager.getLoader(MOVIE_LOADER);
-        if(movieSearchLoader == null)
+        Loader<Cursor> favorite = loaderManager.getLoader(FAVORITE_LOADER);
+
+        if(favorite == null)
         {
-            loaderManager.initLoader(MOVIE_LOADER,queryBundle,this);
+            loaderManager.initLoader(FAVORITE_LOADER,null,mLoaderFavorite);
         }
         else
         {
-            loaderManager.restartLoader(MOVIE_LOADER,queryBundle,this);
+            loaderManager.restartLoader(FAVORITE_LOADER,null,mLoaderFavorite);
+        }
+    }
+
+    private void makeMovieSearchQuery(String value) {
+
+        if(value.equals("favorite"))
+        {
+            load_Type = 2;
+
+            startFavoriteLoader();
+        }
+        else {
+            load_Type = 1;
+
+            page = 1;
+
+            URL movieSearchUrl = NetworkUtils.buildUrl(value);
+
+            Bundle queryBundle = new Bundle();
+            queryBundle.putString(SEARCH_QUERY_URL, movieSearchUrl.toString());
+
+
+            LoaderManager loaderManager = getSupportLoaderManager();
+
+            Loader<String> movieSearchLoader = loaderManager.getLoader(MOVIE_LOADER);
+            if (movieSearchLoader == null) {
+                loaderManager.initLoader(MOVIE_LOADER, queryBundle, this);
+            } else {
+                loaderManager.restartLoader(MOVIE_LOADER, queryBundle, this);
+            }
         }
 
     }
@@ -254,12 +322,32 @@ public class MainActivity extends  AppCompatActivity implements
     @Override
     public void onLoadFinished(Loader<String> loader, String data) {
         mLoadingIndicator.setVisibility(View.INVISIBLE);
-        if (data != null && !data.equals("")) {
-            movieList = new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList);
-            parseJsonDataView(movieList);
-        } else {
-            showErrorMessage();
+        int loaderID = loader.getId();
+        if(loaderID == MOVIE_LOADER) {
+            if (data != null && !data.equals("")) {
+
+                movieList = new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList);
+
+                parseJsonDataView(movieList);
+            }
+            else {
+                showErrorMessage();
+            }
         }
+        if(loaderID == MOVIE_LOADER_PAGE) {
+            if (data != null && !data.equals("")) {
+
+                movieList.addAll(new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList));
+
+                parseJsonDataView(movieList);
+
+                isLoadPage = false;
+            }
+            else {
+                showErrorMessage();
+            }
+        }
+
     }
 
     @Override
@@ -282,13 +370,128 @@ public class MainActivity extends  AppCompatActivity implements
         Intent intent = new Intent(this , DetailsActivity.class);
         intent.putExtra(ID,movieList.get(i).getmId());
         intent.putExtra(TITLE, movieList.get(i).getmTitle());
-        intent.putExtra(POSTER, movieList.get(i).getmPoster_path());
+
+        if(load_Type == 1)intent.putExtra(POSTER, movieList.get(i).getmPoster_path());
+        else intent.putExtra(POSTER, movieList.get(i).getmPoster());
+
         intent.putExtra(OVERVIEW, movieList.get(i).getmOverview());
         intent.putExtra(RELEASE, movieList.get(i).getmRelease_date());
         intent.putExtra(AVERAGE, movieList.get(i).getmVote_average());
+        intent.putExtra(LOAD_TYPE, load_Type);
         startActivity(intent);
 
     }
+
+    private LoaderCallbacks<Cursor> mLoaderFavorite = new LoaderCallbacks<Cursor>() {
+
+        @Override
+        public Loader<Cursor> onCreateLoader(final int id,final Bundle args) {
+
+            return new AsyncTaskLoader<Cursor>(getApplicationContext()) {
+
+                int loaderID = id;
+                // Initialize a Cursor, this will hold all the task data
+                Cursor mData = null;
+
+                // onStartLoading() is called when a loader first starts loading data
+                @Override
+                protected void onStartLoading() {
+                    if(id == FAVORITE_LOADER) {
+                        if (mData != null) {
+                            // Delivers any previously loaded data immediately
+                            deliverResult(mData);
+                        } else {
+                            // Force a new load
+                            forceLoad();
+                        }
+                    }
+                }
+
+                @Override
+                public Cursor loadInBackground() {
+
+                    if(id == FAVORITE_LOADER) {
+                        try {
+                            return getContentResolver().query(MovieEntry.CONTENT_URI,
+                                    null,
+                                    null,
+                                    null,
+                                    null);
+
+                        } catch (Exception e) {
+                            Log.e(TAG, "Failed to asynchronously load favorite data.");
+                            e.printStackTrace();
+                            return null;
+                        }
+                    }
+
+                    return null;
+
+                }
+                public void deliverResult(Cursor data) {
+                    if(loaderID == FAVORITE_LOADER) {
+                        mData = data;
+                        super.deliverResult(data);
+                    }
+                }
+            };
+        }
+
+
+        @Override
+        public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+
+            int loaderID = loader.getId();
+
+            if(loaderID == FAVORITE_LOADER) {
+                if (cursor != null && cursor.getCount() > 0) {
+                    int id_Column = cursor.getColumnIndex(MovieEntry.COLUMN_ID);
+                    int title_Column = cursor.getColumnIndex(MovieEntry.COLUMN_TITLE);
+                    int poster_Column = cursor.getColumnIndex(MovieEntry.COLUMN_POSTER_PATH);
+                    int overview_Column = cursor.getColumnIndex(MovieEntry.COLUMN_OVERVIEW);
+                    int release_Date_Column = cursor.getColumnIndex(MovieEntry.COLUMN_DATE);
+                    int vote_Column = cursor.getColumnIndex(MovieEntry.COLUMN_VOTE_AVERAGE);
+
+
+                    movieList = new ArrayList<>();
+                    while (cursor.moveToNext()) {
+                        String id = cursor.getString(id_Column);
+                        String title = cursor.getString(title_Column);
+                        String poster = cursor.getString(poster_Column);
+                        //poster = poster.substring(31);
+                        String overview = cursor.getString(overview_Column);
+                        String release_Date = cursor.getString(release_Date_Column);
+                        Double vote = cursor.getDouble(vote_Column);
+
+                        Movies movie = new Movies(id, title, poster, overview, release_Date, vote);
+                        movieList.add(movie);
+                    }
+
+                    parseJsonDataView(movieList);
+                }
+                else
+                {
+                    movieList = new ArrayList<>();
+                    parseJsonDataView(movieList);
+                    showEmptyMessage();
+                }
+            }
+
+        }
+
+        @Override
+        public void onLoaderReset(Loader<Cursor> loader) {
+
+        }
+    };
+
+    private void showEmptyMessage() {
+
+        Toast.makeText(this, "Favorites is empty", Toast.LENGTH_LONG).show();
+    }
+
+
+
 
     @Override
     protected void onDestroy() {
@@ -296,4 +499,19 @@ public class MainActivity extends  AppCompatActivity implements
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
     }
+
+
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+
+        if(load_Type == 2)
+        {
+            startFavoriteLoader();
+        }
+    }
+
+
+
 }

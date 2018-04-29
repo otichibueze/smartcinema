@@ -15,6 +15,11 @@ public class MovieReviews implements Parcelable {
 
     MovieReviews(){}
 
+    MovieReviews(String Author,String Content){
+        author = Author;
+        content = Content;
+    }
+
 
     public String getAuthor() {
         return author;
@@ -24,13 +29,7 @@ public class MovieReviews implements Parcelable {
         return content;
     }
 
-    public void setAuthor(String author) {
-        author = author;
-    }
 
-    public void setContent(String content) {
-        content = content;
-    }
 
     private MovieReviews(Parcel in){
         author  = in.readString();

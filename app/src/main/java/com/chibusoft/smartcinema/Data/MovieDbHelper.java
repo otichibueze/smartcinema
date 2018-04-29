@@ -3,7 +3,6 @@ package com.chibusoft.smartcinema.Data;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.provider.BaseColumns;
 
 import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
 import com.chibusoft.smartcinema.Data.MovieContract.MovieReviewsEntry;

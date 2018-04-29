@@ -14,7 +14,6 @@ import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
 import com.chibusoft.smartcinema.Data.MovieContract.MovieVideosEntry;
 import com.chibusoft.smartcinema.Data.MovieContract.MovieReviewsEntry;
 
-import java.nio.channels.SelectableChannel;
 
 /**
  * Created by EBELE PC on 4/23/2018.
@@ -114,7 +113,7 @@ public class MovieContentProvider extends ContentProvider {
                 String[] mSelectionArgs_review = new String[]{id_Review};
 
                 retCursor =  db.query(MovieReviewsEntry.TABLE_NAME,
-                        projection,
+                        null,
                         mselection_review,
                         mSelectionArgs_review,
                         null,
@@ -126,15 +125,15 @@ public class MovieContentProvider extends ContentProvider {
             case MOVIE_VIDEO_WITH_ID:
 
                 //getPathSegments().get(1) this will get number after task "#"
-                //String id_Video = uri.getPathSegments().get(1);
+                String id_Video = uri.getPathSegments().get(1);
 
-                //String mselection_video = "id=?";
-                //String[] mSelectionArgs_video = new String[]{id_Video};
+                String mselection_video = "id=?";
+                String[] mSelectionArgs_video = new String[]{id_Video};
 
                 retCursor =  db.query(MovieVideosEntry.TABLE_NAME,
-                        projection,
-                        selection,
-                        selectionArgs,
+                        null,
+                        mselection_video,
+                        mSelectionArgs_video,
                         null,
                         null,
                         sortOrder);

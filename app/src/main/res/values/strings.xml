@@ -13,12 +13,19 @@
 
     <string name="pref_load_popular_value" translatable="false">popular</string>
     <string name="pref_load_top_rated_value" translatable="false">top_rated</string>
+    <string name="pref_load_favorite_value" translatable="false">favorite</string>
 
     <string name="pref_load_popular_label" translatable="false">Popular</string>
     <string name="pref_load_top_rated_label" translatable="false">Top Rated</string>
+    <string name="pref_load_favorite_label" translatable="false">Favorite</string>
+
+
     <string name="grid_images">Grid Images</string>
     <string name="movie_detail_image">Movie Detail Image</string>
     <string name="trailer">TRAILERS</string>
     <string name="reviews">REVIEWS</string>
+    <string name="action_share">Share</string>
+    <string name="add_my_favorities_movies_action_button">Add my favorities movies action button</string>
+    <string name="play_icon">Play icon</string>
 
 </resources>

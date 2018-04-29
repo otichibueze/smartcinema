@@ -40,7 +40,7 @@ public class MovieVideosAdapter extends ArrayAdapter<MovieVideos> {
 
 
 
-        TextView trailerItem = (TextView) convertView.findViewById(R.id.trailer_text);
+        TextView trailerItem = convertView.findViewById(R.id.trailer_text);
         int num = position + 1;
         trailerItem.setText(movieVideo.type + "  " + num);
 

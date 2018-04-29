@@ -27,6 +27,8 @@ public class NetworkUtils {
 
     private final static String REVIEWS = "reviews";
 
+    private final static String PARAM_PAGE = "page";
+
 
     public static URL buildUrl(String sortby) {
         SORT_BY = sortby;
@@ -34,6 +36,26 @@ public class NetworkUtils {
         Uri buildUri = Uri.parse(BASE_URL).buildUpon()
                 .appendPath(SORT_BY)
                 .appendQueryParameter(PARAM_API,API_KEY)
+                .build();
+
+        URL url = null;
+        try
+        {
+            url = new URL(buildUri.toString());
+        }catch (MalformedURLException e)
+        {
+            e.printStackTrace();
+        }
+
+
+        return url;
+    }
+
+    public static URL buildUrlPage(String page) {
+
+        Uri buildUri = Uri.parse(BASE_URL).buildUpon()
+                .appendPath(SORT_BY)
+                .appendQueryParameter(PARAM_API,API_KEY).appendQueryParameter(PARAM_PAGE,page)
                 .build();
 
         URL url = null;

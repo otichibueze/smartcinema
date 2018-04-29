@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListPreference
-        android:defaultValue="@string/pref_load_popular_label"
+        android:defaultValue="@string/pref_load_popular_value"
         android:entries="@array/pref_load_option_labels"
         android:entryValues="@array/pref_load_option_values"
         android:key="@string/pref_sort_key"

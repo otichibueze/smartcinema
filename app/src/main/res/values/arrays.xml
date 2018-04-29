@@ -3,10 +3,12 @@
     <array name="pref_load_option_labels">
         <item>@string/pref_load_popular_label</item>
         <item>@string/pref_load_top_rated_label</item>
+        <item>@string/pref_load_favorite_label</item>
     </array>
 
     <array name="pref_load_option_values">
         <item>@string/pref_load_popular_value</item>
         <item>@string/pref_load_top_rated_value</item>
+        <item>@string/pref_load_favorite_value</item>
     </array>
 </resources>

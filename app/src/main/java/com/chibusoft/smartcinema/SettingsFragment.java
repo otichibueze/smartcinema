@@ -32,7 +32,7 @@ public class SettingsFragment  extends PreferenceFragmentCompat implements
             Preference p = prefScreen.getPreference(i);
             //Must not be a checkbox else it will crash
             if(p instanceof ListPreference) {
-                String value = sharedPreferences.getString(p.getKey(),"");
+                String value = sharedPreferences.getString(p.getKey(),getResources().getString(R.string.pref_load_popular_value));
                 setPreferenceSummary(p,value);
             }
         }
@@ -57,7 +57,7 @@ public class SettingsFragment  extends PreferenceFragmentCompat implements
         if(null != preference){
             if(preference instanceof ListPreference)
             {
-                String value = sharedPreferences.getString(preference.getKey(),"");
+                String value = sharedPreferences.getString(preference.getKey(),getResources().getString(R.string.pref_load_popular_value));
                 setPreferenceSummary(preference,value);
             }
         }

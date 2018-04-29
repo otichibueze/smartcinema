@@ -17,21 +17,21 @@ public class MovieVideos implements Parcelable {
 
     MovieVideos(){}
 
+    MovieVideos(String Key,String Type){
+        key = Key;
+        type = Type;
+    }
+
+
     public String getKey() {
         return key;
     }
 
-    public void setKey(String key) {
-        key = key;
-    }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        type = type;
-    }
 
     @Override
     public int describeContents() {
