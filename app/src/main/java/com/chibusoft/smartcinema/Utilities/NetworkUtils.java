@@ -1,6 +1,10 @@
 package com.chibusoft.smartcinema.Utilities;
 
+
 import android.net.Uri;
+
+
+import com.chibusoft.smartcinema.BuildConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +23,7 @@ public class NetworkUtils {
 
     public static String SORT_BY = "";
 
-    private final static String API_KEY = "your_key";
+    private final static String API_KEY = BuildConfig.MY_MOVIE_DB_API_KEY;
 
     private final static String PARAM_API = "api_key";
 

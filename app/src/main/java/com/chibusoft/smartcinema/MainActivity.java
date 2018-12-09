@@ -155,6 +155,10 @@ public class MainActivity extends  AppCompatActivity implements
 
     }
 
+    /**
+     * This will load movies sort method from shared preference
+     * @param sharedPreferences
+     */
     private void loadFromPreferences(SharedPreferences sharedPreferences) {
         sort_movies_by = sharedPreferences.getString(getString(R.string.pref_sort_key), getResources().getString(R.string.pref_load_popular_value));
 
