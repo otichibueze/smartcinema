@@ -25,7 +25,7 @@ This project is created under Google Udacity Android Developer Nanodegree.
 The app requires API key from themoviedb.org so as to perform requests and fetch data. 
 You can obtain an API key for free by signing up for an TMDb account at www.themoviedb.org
 
-#### [Learn how to hide Api Key](https://github.com/square/picasso)
+#### [Learn how to hide Api Key](https://github.com/otichibueze/smartcinema/blob/master/HIDE_API_KEY.MD)
 
 ```
 Put API key into ~/.gradle/gradle.properties(global Properties)
