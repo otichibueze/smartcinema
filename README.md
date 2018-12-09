@@ -38,7 +38,7 @@ MyMovieDbApiKey="your_apikey_from_themoviedb.org"
 - App uses a ContentProvider to populate favorite movie details
 
 ## LIBRARIES:
-- [PICASSO](https://github.com/square/picasso)
+- [Picasso](https://github.com/square/picasso)
 - [ButterKnive](https://github.com/JakeWharton/butterknife)
 - [Gson](https://github.com/google/gson)
 
