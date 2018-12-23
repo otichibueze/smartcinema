@@ -1,5 +1,7 @@
 package com.chibusoft.smartcinema;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
@@ -8,6 +10,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBar;
@@ -36,9 +39,11 @@ import android.support.v4.content.Loader;
 import android.widget.Toast;
 
 
-import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
-import com.chibusoft.smartcinema.Data.MovieContract.MovieReviewsEntry;
-import com.chibusoft.smartcinema.Data.MovieContract.MovieVideosEntry;
+import com.chibusoft.smartcinema.Architecture.AppDatabase;
+import com.chibusoft.smartcinema.Architecture.AppExecutors;
+import com.chibusoft.smartcinema.Architecture.MovieReviewsRoom;
+import com.chibusoft.smartcinema.Architecture.MoviesRoom;
+import com.chibusoft.smartcinema.Architecture.MoviesVideoRoom;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeReviews;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeVideos;
 import com.chibusoft.smartcinema.Utilities.NetworkUtils;
@@ -50,7 +55,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-
+import java.util.List;
 
 
 import butterknife.BindView;
@@ -72,6 +77,8 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
     ImageView movieimage;
 
     private String image_link;
+
+    private AppDatabase mDb;
 
     @BindView(R.id.favorite_btn)
     ImageButton favorite_button;
@@ -121,6 +128,9 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         setContentView(R.layout.activity_details);
 
         ButterKnife.bind(this);
+
+        //Initialize member variable for the data base
+        mDb = AppDatabase.getInstance(getApplicationContext());
 
 
         ActionBar actionBar = this.getSupportActionBar();
@@ -211,18 +221,9 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         isFavorite = isFavorite ? false : true;
 
         if (isFavorite) {
-            ContentValues contentValues = new ContentValues();
-
-            //This takes in a put string that identifies the kind of data being put and the data
-            contentValues.put(MovieEntry.COLUMN_ID, mID);
-            contentValues.put(MovieEntry.COLUMN_TITLE, title.getText().toString());
-            contentValues.put(MovieEntry.COLUMN_POSTER_PATH, image_link);
-            contentValues.put(MovieEntry.COLUMN_OVERVIEW, synopsis.getText().toString());
-            contentValues.put(MovieEntry.COLUMN_DATE, release.getText().toString());
-            contentValues.put(MovieEntry.COLUMN_VOTE_AVERAGE, vote.getText().toString());
-            contentValues.put(MovieEntry.COLUMN_FAVORITE, isFavorite);
 
             //save picture to internal memory
+            //Reason i saved to internal memory is because when there is no network and we load from DB picture wont load
             final String[] picturePath = new String[1];
             Picasso.with(this)
                     .load(image_link)
@@ -261,44 +262,54 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                           }
                     );
 
-            //save picture path to database
-            contentValues.put(MovieEntry.COLUMN_POSTER_PATH, picturePath[0]);
+            //picture in local storage
+            // picturePath[0]
 
-            Uri uri = getContentResolver().insert(MovieEntry.CONTENT_URI, contentValues);
 
-            if (uri != null) {
-                contentValues.clear();
-            }
+            //Make MoviewRoom final so it is visible inside the run method
+            final MoviesRoom moviesRoom = new MoviesRoom(Integer.parseInt(mID), Double.parseDouble(vote.getText().toString()),title.getText().toString(),picturePath[0],
+                    synopsis.getText().toString(),release.getText().toString(),isFavorite );
 
-            int rowsVid = 0;
+
+
+            //We create a list here to model the data we want to insert
+            //I Trust they maybe a faster way
+            List<MoviesVideoRoom> moviesVideoRoomList = new ArrayList<>();
+
             if(movieVideoList.size() > 0) {
-                ContentValues[] contentValuesVideos = new ContentValues[movieVideoList.size()];
-
                 for (int i = 0; i < movieVideoList.size(); i++) {
-                    contentValuesVideos[i] = new ContentValues();
-                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_ID, mID);
-                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_KEY, movieVideoList.get(i).getKey());
-                    contentValuesVideos[i].put(MovieVideosEntry.COLUMN_TYPE, movieVideoList.get(i).getType());
+
+                    moviesVideoRoomList.add(new MoviesVideoRoom(Integer.parseInt(mID),movieVideoList.get(i).getKey(),movieVideoList.get(i).getType()));
                 }
-
-                getContentResolver().bulkInsert(MovieVideosEntry.CONTENT_URI, contentValuesVideos);
-
             }
 
-            int rowsReviews = 0;
+            List<MovieReviewsRoom> movieReviewsRoomList = new ArrayList<>();
+
+
             if(movieReviewList!= null && movieReviewList.size() > 0) {
-                ContentValues[] contentValuesReviews = new ContentValues[movieReviewList.size()];
-
                 for (int i = 0; i < movieReviewList.size(); i++) {
-                    contentValuesReviews[i] = new ContentValues();
-                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_ID, mID);
-                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_AUTHOR, movieReviewList.get(i).getAuthor());
-                    contentValuesReviews[i].put(MovieReviewsEntry.COLUMN_CONTENT, movieReviewList.get(i).getContent());
+
+                    movieReviewsRoomList.add(new MovieReviewsRoom(Integer.parseInt(mID),movieReviewList.get(i).getAuthor(),
+                            movieReviewList.get(i).getContent()));
                 }
-
-                 getContentResolver().bulkInsert(MovieReviewsEntry.CONTENT_URI, contentValuesReviews);
-
             }
+
+            final List<MovieReviewsRoom> MOVIEREVIEWLIST = movieReviewsRoomList;
+            final List<MoviesVideoRoom> MOVIEVIDEOSLIST = moviesVideoRoomList;
+
+            //Here we insert using app executors
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    //Move the remaining logic inside the run method
+                    mDb.moviesDao().insertMovies(moviesRoom);
+                    mDb.movieVideoDao().insertVideo(MOVIEVIDEOSLIST);
+                    mDb.moviesReviewsDao().insertReview(MOVIEREVIEWLIST);
+                  //  finish();
+                }
+            });
+
+            showFavorite(isFavorite);// show favorite
 
             Toast.makeText(getBaseContext(), result, Toast.LENGTH_LONG).show();
 
@@ -306,7 +317,6 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         else
         {
             result = "Removed from Favorites";
-            Uri uri = MovieEntry.CONTENT_URI.buildUpon().appendPath(mID).build();
 
             //Delete picture from local storage
             String picturePath = image_link; // See above
@@ -315,15 +325,17 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                 FilePath.delete();
             }
 
-            int delMovie = getContentResolver().delete(uri, null, null);
-
-            Uri uriReview = MovieReviewsEntry.CONTENT_URI.buildUpon().appendPath(mID).build();
-
-            int delReview =  getContentResolver().delete(uriReview, null, null);
-
-            Uri uriVideo = MovieVideosEntry.CONTENT_URI.buildUpon().appendPath(mID).build();
-
-            int delVideo = getContentResolver().delete(uriVideo, null, null);
+            //Here we insert using app executors
+            AppExecutors.getInstance().diskIO().execute(new Runnable() {
+                @Override
+                public void run() {
+                    //Move the remaining logic inside the run method
+                    mDb.moviesDao().DeleteMovieById(Integer.parseInt(mID));
+                    mDb.movieVideoDao().DeleteVideoById(Integer.parseInt(mID));
+                    mDb.moviesReviewsDao().deleteReviewById(Integer.parseInt(mID));
+                 //   finish();
+                }
+            });
 
             Toast.makeText(getBaseContext(), result, Toast.LENGTH_LONG).show();
         }
@@ -595,234 +607,81 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
 
     private void loadIsFavorite(String id)
     {
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(ID_SEARCH_QUERY,id);
 
-        LoaderManager loaderManager = getSupportLoaderManager();
+        LiveData<MoviesRoom> movies = mDb.moviesDao().loadMovieById(Integer.parseInt(id));
 
-        Loader<Cursor> is_favorite = loaderManager.getLoader(IS_FAVORITE_LOADER);
+        movies.observe(this, new Observer<MoviesRoom>() {
+            @Override
+            public void onChanged(@Nullable MoviesRoom movieEntries) {
+                Log.d(TAG, "Receiving database update from LiveData");
+               //Adapter here
+                if(movieEntries == null)
+                {
+                    isFavorite = false;
+                    showFavorite(isFavorite);
+                }
+                else
+                {
+                    isFavorite = movieEntries.getFavorite();
+                    showFavorite(isFavorite);
+                }
+            }
+        });
 
-        if(is_favorite == null)
-        {
-            loaderManager.initLoader(IS_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
-        else
-        {
-            loaderManager.restartLoader(IS_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
     }
 
     private void loadIsFavoriteReview(String id)
     {
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(ID_SEARCH_QUERY,id);
+        LiveData<List<MovieReviewsRoom>> reviewsList = mDb.moviesReviewsDao().loadReviewById(Integer.parseInt(id));
 
-        LoaderManager loaderManager = getSupportLoaderManager();
+        reviewsList.observe(this, new Observer<List<MovieReviewsRoom>>() {
+            @Override
+            public void onChanged(@Nullable List<MovieReviewsRoom> reviewEntries) {
+                Log.d(TAG, "Receiving database update from LiveData");
+                //Adapter here
 
-        Loader<Cursor> review_favorite = loaderManager.getLoader(REVIEW_FAVORITE_LOADER);
+                movieReviewList = new ArrayList<>();
+                for(int i = 0; i < reviewEntries.size(); i++)
+                {
+                    String author = reviewEntries.get(i).getAuthor();
+                    String content = reviewEntries.get(i).getContent();
 
-        if(review_favorite == null)
-        {
-            loaderManager.initLoader(REVIEW_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
-        else
-        {
-            loaderManager.restartLoader(REVIEW_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
+                    MovieReviews movieReviews = new MovieReviews(author,content);
+                    movieReviewList.add(movieReviews);
+                }
+
+                parseJsonDataReview(movieReviewList);
+            }
+        });
+
     }
 
     private void loadIsFavoriteVideo(String id)
     {
-        Bundle queryBundle = new Bundle();
-        queryBundle.putString(ID_SEARCH_QUERY,id);
 
-        LoaderManager loaderManager = getSupportLoaderManager();
+        LiveData<List<MoviesVideoRoom>> videosList = mDb.movieVideoDao().loadVideoById(Integer.parseInt(id));
 
-        Loader<Cursor> video_favorite = loaderManager.getLoader(VIDEO_FAVORITE_LOADER);
+        videosList.observe(this, new Observer<List<MoviesVideoRoom>>() {
+            @Override
+            public void onChanged(@Nullable List<MoviesVideoRoom> videoEntries) {
+                Log.d(TAG, "Receiving database update from LiveData");
+                //Adapter here
 
-        if(video_favorite == null)
-        {
-            loaderManager.initLoader(VIDEO_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
-        else
-        {
-            loaderManager.restartLoader(VIDEO_FAVORITE_LOADER,queryBundle,mLoaderCallbackCursor);
-        }
+
+                movieVideoList = new ArrayList<>();
+                for(int i = 0; i < videoEntries.size(); i++)
+                {
+                    String key = videoEntries.get(i).getKey();
+                    String type = videoEntries.get(i).getType();
+
+                    MovieVideos movieVideos = new MovieVideos(key,type);
+                    movieVideoList.add(movieVideos);
+                }
+
+                parseJsonDataVideo(movieVideoList);
+            }
+        });
+
     }
 
-
-
-
-    private LoaderCallbacks<Cursor> mLoaderCallbackCursor = new LoaderCallbacks<Cursor>() {
-
-        @Override
-        public Loader<Cursor> onCreateLoader(final int id,final Bundle args) {
-
-            return new AsyncTaskLoader<Cursor>(getApplicationContext()) {
-
-                int loaderID = id;
-                // Initialize a Cursor, this will hold all the task data
-                Cursor mData = null;
-                Cursor mDataReview = null;
-                Cursor mDataVideo = null;
-
-                // onStartLoading() is called when a loader first starts loading data
-                @Override
-                protected void onStartLoading() {
-                    if (mData != null && loaderID == IS_FAVORITE_LOADER) {
-                        // Delivers any previously loaded data immediately
-                        deliverResult(mData);
-                    } else {
-                        // Force a new load
-                        forceLoad();
-                    }
-                }
-
-                @Override
-                public Cursor loadInBackground() {
-                    // Will implement to load data
-
-                    if(loaderID == IS_FAVORITE_LOADER)
-                    {
-                        String searchId = args.getString(ID_SEARCH_QUERY);
-                        final String[] FAVORITE_PROJECTION = {
-                                MovieEntry.COLUMN_FAVORITE,
-                        };
-
-
-
-                        Uri singleUri = ContentUris.withAppendedId(MovieEntry.CONTENT_URI, Integer.parseInt(searchId));
-
-                        try {
-                            return getContentResolver().query(singleUri,
-                                    FAVORITE_PROJECTION,
-                                    null,
-                                    null,
-                                    null);
-
-                        } catch (Exception e) {
-                            Log.e(TAG, "Failed to asynchronously load data.");
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-                    if(loaderID == REVIEW_FAVORITE_LOADER)
-                    {
-                        String searchId = args.getString(ID_SEARCH_QUERY);
-
-                        Uri uri = MovieReviewsEntry.CONTENT_URI.buildUpon().appendPath(searchId).build();
-                        try {
-                            return getContentResolver().query(uri,
-                                    null,
-                                    null,
-                                    null,
-                                    null);
-
-                        } catch (Exception e) {
-                            Log.e(TAG, "Failed to asynchronously load data.");
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-                    if(loaderID == VIDEO_FAVORITE_LOADER)
-                    {
-                        String searchId = args.getString(ID_SEARCH_QUERY);
-
-                        Uri uri = MovieVideosEntry.CONTENT_URI.buildUpon().appendPath(searchId).build();
-                        try {
-                            return getContentResolver().query(uri,
-                                    null,
-                                    null,
-                                    null,
-                                    null);
-
-                        } catch (Exception e) {
-                            Log.e(TAG, "Failed to asynchronously load data.");
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-
-                    return null;
-                }
-
-                // deliverResult sends the result of the load, a Cursor, to the registered listener
-                public void deliverResult(Cursor data) {
-                    if(loaderID == IS_FAVORITE_LOADER) mData = data;
-                    if(loaderID == REVIEW_FAVORITE_LOADER) mDataReview = data;
-                    if(loaderID == VIDEO_FAVORITE_LOADER) mDataVideo = data;
-                    super.deliverResult(data);
-                }
-            };
-        }
-
-
-        @Override
-        public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-
-            int loaderID = loader.getId();
-            if(loaderID == IS_FAVORITE_LOADER)
-            {
-                if(cursor.getCount() > 0)
-                {
-                    int favorite_column = cursor.getColumnIndex(MovieEntry.COLUMN_FAVORITE);
-
-                    cursor.moveToFirst();
-
-                    isFavorite = cursor.getInt(favorite_column) > 0;
-                }
-                else {
-                    isFavorite = false;
-                }
-                showFavorite(isFavorite);
-            }
-            if(loaderID == REVIEW_FAVORITE_LOADER)
-            {
-                if(cursor.getCount() > 0)
-                {
-                    int author_Column = cursor.getColumnIndex(MovieReviewsEntry.COLUMN_AUTHOR);
-                    int content_Column = cursor.getColumnIndex(MovieReviewsEntry.COLUMN_CONTENT);
-
-                    movieReviewList = new ArrayList<>();
-                   while (cursor.moveToNext())
-                   {
-                       String author = cursor.getString(author_Column);
-                       String content = cursor.getString(content_Column);
-
-                       MovieReviews movieReviews = new MovieReviews(author,content);
-                       movieReviewList.add(movieReviews);
-                   }
-
-                   parseJsonDataReview(movieReviewList);
-
-                }
-            }
-            if(loaderID == VIDEO_FAVORITE_LOADER)
-            {
-                if(cursor.getCount() > 0)
-                {
-                    int key_Column = cursor.getColumnIndex(MovieVideosEntry.COLUMN_KEY);
-                    int type_Column = cursor.getColumnIndex(MovieVideosEntry.COLUMN_TYPE);
-
-                    movieVideoList = new ArrayList<>();
-                    while (cursor.moveToNext())
-                    {
-                        String key = cursor.getString(key_Column);
-                        String type = cursor.getString(type_Column);
-
-                        MovieVideos movieVideos = new MovieVideos(key,type);
-                        movieVideoList.add(movieVideos);
-                    }
-
-                    parseJsonDataVideo(movieVideoList);
-
-                }
-            }
-        }
-
-        @Override
-        public void onLoaderReset(Loader<Cursor> loader) {
-
-        }
-    };
 }

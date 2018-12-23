@@ -1,10 +1,13 @@
 package com.chibusoft.smartcinema;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.app.LoaderManager.LoaderCallbacks;
 import android.support.v4.content.AsyncTaskLoader;
@@ -22,12 +25,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import com.chibusoft.smartcinema.Data.MovieContract.MovieEntry;
+
+import com.chibusoft.smartcinema.Architecture.AppDatabase;
+import com.chibusoft.smartcinema.Architecture.MoviesRoom;
 import com.chibusoft.smartcinema.Utilities.BoxOfficeMovies;
 import com.chibusoft.smartcinema.Utilities.NetworkUtils;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends  AppCompatActivity implements
         LoaderManager.LoaderCallbacks<String>, OnSharedPreferenceChangeListener, MoviesAdapter.ItemClickListener {
@@ -51,6 +57,9 @@ public class MainActivity extends  AppCompatActivity implements
     public static final String RELEASE = "RELEASE";
     public static final String AVERAGE = "AVERAGE";
     public static final String LOAD_TYPE = "LOAD";
+
+    //Database Instance
+    private AppDatabase mDb;
 
 
     private MoviesAdapter movieAdapter;
@@ -76,6 +85,9 @@ public class MainActivity extends  AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //Initialize member variable for the data base
+        mDb = AppDatabase.getInstance(getApplicationContext());
         setupSharedPreferences();
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
 
@@ -201,18 +213,45 @@ public class MainActivity extends  AppCompatActivity implements
 
     private  void startFavoriteLoader()
     {
-        LoaderManager loaderManager = getSupportLoaderManager();
 
-        Loader<Cursor> favorite = loaderManager.getLoader(FAVORITE_LOADER);
+        LiveData<List<MoviesRoom>> moviesList = mDb.moviesDao().loadAllMovies();
 
-        if(favorite == null)
-        {
-            loaderManager.initLoader(FAVORITE_LOADER,null,mLoaderFavorite);
-        }
-        else
-        {
-            loaderManager.restartLoader(FAVORITE_LOADER,null,mLoaderFavorite);
-        }
+        moviesList.observe(this, new Observer<List<MoviesRoom>>() {
+            @Override
+            public void onChanged(@Nullable List<MoviesRoom> movieListEntries) {
+                Log.d(TAG, "Receiving database update from LiveData");
+                //Adapter here
+                movieList = new ArrayList<>();
+                for(int i = 0; i < movieListEntries.size();i++) {
+                    String id = String.valueOf(movieListEntries.get(i).getKey());
+                    String title = movieListEntries.get(i).getTitle();
+                    String poster = movieListEntries.get(i).getPoster_path();
+                    String overview = movieListEntries.get(i).getOverview();
+                    String release_Date = movieListEntries.get(i).getRelease_date();
+                    Double vote = movieListEntries.get(i).getVote_average();
+
+                    Movies movie = new Movies(id, title, poster, overview, release_Date, vote);
+                    movieList.add(movie);
+                }
+
+                parseJsonDataView(movieList);
+            }
+        });
+
+
+
+       // LoaderManager loaderManager = getSupportLoaderManager();
+
+       // Loader<Cursor> favorite = loaderManager.getLoader(FAVORITE_LOADER);
+
+       // if(favorite == null)
+       // {
+       //     loaderManager.initLoader(FAVORITE_LOADER,null,mLoaderFavorite);
+       // }
+       // else
+       // {
+       //     loaderManager.restartLoader(FAVORITE_LOADER,null,mLoaderFavorite);
+       // }
     }
 
     private void makeMovieSearchQuery(String value) {
@@ -386,108 +425,6 @@ public class MainActivity extends  AppCompatActivity implements
 
     }
 
-    private LoaderCallbacks<Cursor> mLoaderFavorite = new LoaderCallbacks<Cursor>() {
-
-        @Override
-        public Loader<Cursor> onCreateLoader(final int id,final Bundle args) {
-
-            return new AsyncTaskLoader<Cursor>(getApplicationContext()) {
-
-                int loaderID = id;
-                // Initialize a Cursor, this will hold all the task data
-                Cursor mData = null;
-
-                // onStartLoading() is called when a loader first starts loading data
-                @Override
-                protected void onStartLoading() {
-                    if(id == FAVORITE_LOADER) {
-                        if (mData != null) {
-                            // Delivers any previously loaded data immediately
-                            deliverResult(mData);
-                        } else {
-                            // Force a new load
-                            forceLoad();
-                        }
-                    }
-                }
-
-                @Override
-                public Cursor loadInBackground() {
-
-                    if(id == FAVORITE_LOADER) {
-                        try {
-                            return getContentResolver().query(MovieEntry.CONTENT_URI,
-                                    null,
-                                    null,
-                                    null,
-                                    null);
-
-                        } catch (Exception e) {
-                            Log.e(TAG, "Failed to asynchronously load favorite data.");
-                            e.printStackTrace();
-                            return null;
-                        }
-                    }
-
-                    return null;
-
-                }
-                public void deliverResult(Cursor data) {
-                    if(loaderID == FAVORITE_LOADER) {
-                        mData = data;
-                        super.deliverResult(data);
-                    }
-                }
-            };
-        }
-
-
-        @Override
-        public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
-
-            int loaderID = loader.getId();
-
-            if(loaderID == FAVORITE_LOADER) {
-                if (cursor != null && cursor.getCount() > 0) {
-                    int id_Column = cursor.getColumnIndex(MovieEntry.COLUMN_ID);
-                    int title_Column = cursor.getColumnIndex(MovieEntry.COLUMN_TITLE);
-                    int poster_Column = cursor.getColumnIndex(MovieEntry.COLUMN_POSTER_PATH);
-                    int overview_Column = cursor.getColumnIndex(MovieEntry.COLUMN_OVERVIEW);
-                    int release_Date_Column = cursor.getColumnIndex(MovieEntry.COLUMN_DATE);
-                    int vote_Column = cursor.getColumnIndex(MovieEntry.COLUMN_VOTE_AVERAGE);
-
-
-                    movieList = new ArrayList<>();
-                    while (cursor.moveToNext()) {
-                        String id = cursor.getString(id_Column);
-                        String title = cursor.getString(title_Column);
-                        String poster = cursor.getString(poster_Column);
-                        //poster = poster.substring(31);
-                        String overview = cursor.getString(overview_Column);
-                        String release_Date = cursor.getString(release_Date_Column);
-                        Double vote = cursor.getDouble(vote_Column);
-
-                        Movies movie = new Movies(id, title, poster, overview, release_Date, vote);
-                        movieList.add(movie);
-                    }
-
-                    parseJsonDataView(movieList);
-                }
-                else
-                {
-                    movieList = new ArrayList<>();
-                    parseJsonDataView(movieList);
-                    showEmptyMessage();
-                }
-            }
-
-        }
-
-        @Override
-        public void onLoaderReset(Loader<Cursor> loader) {
-
-        }
-    };
 
     private void showEmptyMessage() {
 

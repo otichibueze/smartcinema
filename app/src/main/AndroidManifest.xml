@@ -37,10 +37,7 @@
                 android:value=".MainActivity" />
         </activity>
 
-        <provider
-        android:name="com.chibusoft.smartcinema.Data.MovieContentProvider"
-        android:authorities="com.chibusoft.smartcinema"
-        android:exported="false"/>
+
     </application>
 
 </manifest>
