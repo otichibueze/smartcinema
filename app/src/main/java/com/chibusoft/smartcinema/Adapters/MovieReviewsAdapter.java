@@ -1,4 +1,4 @@
-package com.chibusoft.smartcinema;
+package com.chibusoft.smartcinema.Adapters;
 
 import android.app.Activity;
 import android.view.LayoutInflater;
@@ -7,17 +7,20 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.chibusoft.smartcinema.Models.MovieReviews.Results;
+import com.chibusoft.smartcinema.R;
+
 import java.util.List;
 
 /**
  * Created by EBELE PC on 4/19/2018.
  */
 
-public class MovieReviewsAdapter extends ArrayAdapter<MovieReviews> {
+public class MovieReviewsAdapter extends ArrayAdapter<Results> {
 
     private static final String LOG_TAG = MovieReviewsAdapter.class.getSimpleName();
 
-    public MovieReviewsAdapter(Activity context, List<MovieReviews> movieReviews) {
+    public MovieReviewsAdapter(Activity context, List<Results> movieReviews) {
         // Here, we initialize the ArrayAdapter's internal storage for the context and the list.
         // the second argument is used when the ArrayAdapter is populating a single TextView.
         // Because this is a custom adapter for two TextViews and an ImageView, the adapter is not
@@ -29,7 +32,7 @@ public class MovieReviewsAdapter extends ArrayAdapter<MovieReviews> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Gets the AndroidFlavor object from the ArrayAdapter at the appropriate position
-        MovieReviews movieReviews = getItem(position);
+        Results movieReviews = getItem(position);
 
         // Adapters recycle views to AdapterViews.
         // If this is a new View object we're getting, then inflate the layout.

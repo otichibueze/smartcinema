@@ -2,41 +2,36 @@ package com.chibusoft.smartcinema;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
+import android.arch.paging.PagedList;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.support.annotation.Nullable;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.content.AsyncTaskLoader;
-import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.RecyclerView.OnScrollListener;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-
+import com.chibusoft.smartcinema.Adapters.MoviesAdapter;
+import com.chibusoft.smartcinema.Adapters.RoomMovieAdapter;
 import com.chibusoft.smartcinema.Architecture.AppDatabase;
+import com.chibusoft.smartcinema.Architecture.MovieViewModel;
 import com.chibusoft.smartcinema.Architecture.MoviesRoom;
-import com.chibusoft.smartcinema.Utilities.BoxOfficeMovies;
-import com.chibusoft.smartcinema.Utilities.NetworkUtils;
-import java.io.IOException;
+import com.chibusoft.smartcinema.Architecture.RoomViewModel;
+import com.chibusoft.smartcinema.Models.Movies;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends  AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<String>, OnSharedPreferenceChangeListener, MoviesAdapter.ItemClickListener {
+public class MainActivity extends  AppCompatActivity implements OnSharedPreferenceChangeListener, MoviesAdapter.ItemClickListener
+, RoomMovieAdapter.ItemClickListener{
 
 
 
@@ -61,40 +56,49 @@ public class MainActivity extends  AppCompatActivity implements
     //Database Instance
     private AppDatabase mDb;
 
+    //MainActivity
+    private static MainActivity instance;
 
     private MoviesAdapter movieAdapter;
 
-    private ArrayList<Movies> movieList;
+    private Movies movieList;
 
-    private Movies[] movies;
+    //private Movies[] movies;
 
     public static int load_Type = 1;
 
-    private String sort_movies_by;
+    public static String sort_movies_by;
 
-    private BoxOfficeMovies boxOfficeMovies;
+    public final static String KEY = BuildConfig.MY_MOVIE_DB_API_KEY;
 
-    private int page = 1;
+   // private BoxOfficeMovies boxOfficeMovies;
 
-    private boolean isLoadPage = false;
+    public int page = 1;
 
-    private GridLayoutManager gridLayoutManager;
+    //public boolean isLoadPage = false;
 
+   // private GridLayoutManager gridLayoutManager;
+
+    public SharedPreferences sharedPreference;
+
+    public MovieViewModel movieViewModel;
+
+    public  RecyclerView mMovie_RV;
+
+    public final MoviesAdapter adapter = new MoviesAdapter(this,this);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        instance = this;
+
         //Initialize member variable for the data base
         mDb = AppDatabase.getInstance(getApplicationContext());
-        setupSharedPreferences();
         mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
 
-        //Create new instance of Gson class
-       boxOfficeMovies = new BoxOfficeMovies();
-
-        RecyclerView mMovie_RV = findViewById(R.id.rv_movies);
+        mMovie_RV = findViewById(R.id.rv_movies);//rv_movies from layout
 
        //spancount this tell the grid how many columns you want
         if(this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT){
@@ -109,74 +113,107 @@ public class MainActivity extends  AppCompatActivity implements
         mMovie_RV.setHasFixedSize(true);
 
 
-        movieAdapter = new MoviesAdapter(this,movieList,this);
-
-        mMovie_RV.setAdapter(movieAdapter);
-
-        mMovie_RV.addOnScrollListener(new OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
-
-                //directions -1 for up, 1 for down
-                //this code will only run wen we scroll to the end down because we used 1
-                //if we used -1 will run when we hit the end up
-                if(!recyclerView.canScrollVertically(1))
-                {
-                    if(load_Type == 1 && page < 5 && !isLoadPage)
-                    {
-                        page +=1;
-                        isLoadPage = true;
-                        URL movieSearchUrl = NetworkUtils.buildUrlPage(String.valueOf(page));
-
-                        Bundle queryBundle = new Bundle();
-                        queryBundle.putString(SEARCH_QUERY_URL, movieSearchUrl.toString());
+        //From step 5
+        //TODO i removed
+//         movieViewModel = ViewModelProviders.of(this).get(MovieViewModel.class);
+//
+//        movieViewModel.MoviePagedList.observe(this, new Observer<PagedList<Movies.Results>>() {
+//            @Override
+//            public void onChanged(@Nullable PagedList<Movies.Results> moviesList) {
+//                adapter.submitList(moviesList);
+//            }
+//        });
+//
+//        mMovie_RV.setAdapter(adapter);
+//
+//
+//        //Create shared preference
+        setupSharedPreferences();
 
 
-                        LoaderManager loaderManager = getSupportLoaderManager();
-
-                        Loader<String> movieSearchLoader = loaderManager.getLoader(MOVIE_LOADER);
-                        if (movieSearchLoader == null) {
-                            loaderManager.initLoader(MOVIE_LOADER_PAGE, queryBundle, MainActivity.this);
-                        } else {
-                            loaderManager.restartLoader(MOVIE_LOADER_PAGE, queryBundle, MainActivity.this);
-                        }
-                    }
-                }
-            }
-        });
-
-        /*
-         * Initialize the loader
-         */
-        getSupportLoaderManager().initLoader(MOVIE_LOADER, null, this);
-    }
-
-    @Override
-    public void onListItemClick(int clickedItemIndex)
-    {
-        launchDetailActivity(clickedItemIndex);
     }
 
     private void setupSharedPreferences() {
+        sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreference.registerOnSharedPreferenceChangeListener(this);
+        loadFromPreferences(sharedPreference);
+    }
 
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
-        loadFromPreferences(sharedPreferences);
-
-
+    ///Get insstance
+    public static MainActivity getInstance() {
+        return instance;
     }
 
     /**
      * This will load movies sort method from shared preference
      * @param sharedPreferences
      */
-    private void loadFromPreferences(SharedPreferences sharedPreferences) {
+    public void loadFromPreferences(SharedPreferences sharedPreferences) {
         sort_movies_by = sharedPreferences.getString(getString(R.string.pref_sort_key), getResources().getString(R.string.pref_load_popular_value));
 
+        //TODO i removed load code
         makeMovieSearchQuery(sort_movies_by);
-
     }
+
+    private void makeMovieSearchQuery(String value) {
+
+        if(value.equals("favorite"))
+        {
+            load_Type = 2;
+
+            //This load data from viewModel using room as dataSource
+            //Then paging library to load recyclerview adapter
+            startFavoriteLoader();
+        }
+        else {
+            load_Type = 1;
+            page = 1;
+
+            //This loads data from network using viewModel and dataSource
+            //Inside dataSource we have retrofit that load info from network
+            loadFromNetwork();
+
+        }
+    }
+
+    public void loadFromNetwork()
+    {
+        movieViewModel = ViewModelProviders.of(this).get(MovieViewModel.class);
+
+        if(movieViewModel != null) {
+            movieViewModel.SortData(this,sort_movies_by);
+
+            movieViewModel.MoviePagedList.observe(this, new Observer<PagedList<Movies.Results>>() {
+                @Override
+                public void onChanged(@Nullable PagedList<Movies.Results> moviesList) {
+                    adapter.submitList(moviesList);
+                }
+            });
+        }
+
+        mMovie_RV.setAdapter(adapter);
+    }
+
+
+
+    private  void startFavoriteLoader()
+    {
+
+        RoomViewModel roomViewModel =  ViewModelProviders.of(this).get(RoomViewModel.class);
+
+        final RoomMovieAdapter roomMovieAdapter = new RoomMovieAdapter(this,this);
+
+        roomViewModel.MovieRoomPagedList.observe(this, new Observer<PagedList<MoviesRoom>>() {
+            @Override
+            public void onChanged(@Nullable PagedList<MoviesRoom> moviesRoom) {
+
+                roomMovieAdapter.submitList(moviesRoom);
+            }
+        });
+
+        mMovie_RV.setAdapter(roomMovieAdapter);
+    }
+
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
@@ -211,223 +248,73 @@ public class MainActivity extends  AppCompatActivity implements
 
     }
 
-    private  void startFavoriteLoader()
-    {
-
-        LiveData<List<MoviesRoom>> moviesList = mDb.moviesDao().loadAllMovies();
-
-        moviesList.observe(this, new Observer<List<MoviesRoom>>() {
-            @Override
-            public void onChanged(@Nullable List<MoviesRoom> movieListEntries) {
-                Log.d(TAG, "Receiving database update from LiveData");
-                //Adapter here
-                movieList = new ArrayList<>();
-                for(int i = 0; i < movieListEntries.size();i++) {
-                    String id = String.valueOf(movieListEntries.get(i).getKey());
-                    String title = movieListEntries.get(i).getTitle();
-                    String poster = movieListEntries.get(i).getPoster_path();
-                    String overview = movieListEntries.get(i).getOverview();
-                    String release_Date = movieListEntries.get(i).getRelease_date();
-                    Double vote = movieListEntries.get(i).getVote_average();
-
-                    Movies movie = new Movies(id, title, poster, overview, release_Date, vote);
-                    movieList.add(movie);
-                }
-
-                parseJsonDataView(movieList);
-            }
-        });
 
 
-
-       // LoaderManager loaderManager = getSupportLoaderManager();
-
-       // Loader<Cursor> favorite = loaderManager.getLoader(FAVORITE_LOADER);
-
-       // if(favorite == null)
-       // {
-       //     loaderManager.initLoader(FAVORITE_LOADER,null,mLoaderFavorite);
-       // }
-       // else
-       // {
-       //     loaderManager.restartLoader(FAVORITE_LOADER,null,mLoaderFavorite);
-       // }
-    }
-
-    private void makeMovieSearchQuery(String value) {
-
-        if(value.equals("favorite"))
-        {
-            load_Type = 2;
-
-            startFavoriteLoader();
-        }
-        else {
-            load_Type = 1;
-
-            page = 1;
-
-            URL movieSearchUrl = NetworkUtils.buildUrl(value);
-
-            Bundle queryBundle = new Bundle();
-            queryBundle.putString(SEARCH_QUERY_URL, movieSearchUrl.toString());
-
-
-            LoaderManager loaderManager = getSupportLoaderManager();
-
-            Loader<String> movieSearchLoader = loaderManager.getLoader(MOVIE_LOADER);
-            if (movieSearchLoader == null) {
-                loaderManager.initLoader(MOVIE_LOADER, queryBundle, this);
-            } else {
-                loaderManager.restartLoader(MOVIE_LOADER, queryBundle, this);
-            }
-        }
-
-    }
-
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putParcelableArrayList("savedMovies", movieList);
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-
-        if(savedInstanceState == null || !savedInstanceState.containsKey("savedMovies")) {
-            movieList = new ArrayList<>();
-        }
-        else {
-            movieList = savedInstanceState.getParcelableArrayList("savedMovies");
-        }
-    }
-
-    @Override
-    public Loader<String> onCreateLoader(int id,final Bundle args) {
-        return new AsyncTaskLoader<String>(this) {
-
-            String mMovieJson ;
-
-            @Override
-            protected void onStartLoading() {
-                super.onStartLoading();
-                if(args == null)
-                {
-                    return;
-                }
-
-
-                mLoadingIndicator.setVisibility(View.VISIBLE);
-
-
-                if(mMovieJson != null )
-                {
-                    deliverResult(mMovieJson);
-                }
-                else
-                {
-                    forceLoad(); //force load in background
-                    //put code on pre-execute here
-                    mLoadingIndicator.setVisibility(View.VISIBLE);
-                }
-            }
-
-            @Override
-            public String loadInBackground() {
-
-                String searchQueryUrlString = args.getString(SEARCH_QUERY_URL);
-                if(searchQueryUrlString == null || TextUtils.isEmpty(searchQueryUrlString)) {
-                    return null;
-                }
-                try {
-                    URL result = new URL(searchQueryUrlString);
-                    return NetworkUtils.getResponseFromHttpUrl(result);
-                } catch (IOException e) {
-                    //showErrorMessage();
-                    e.printStackTrace();
-                    return null;
-                }
-
-            }
-
-            @Override
-            public void deliverResult(String movieJson) {
-                mMovieJson = movieJson;
-                super.deliverResult(movieJson);
-                mLoadingIndicator.setVisibility(View.INVISIBLE);
-            }
-
-        };
-    }
-
-    @Override
-    public void onLoadFinished(Loader<String> loader, String data) {
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
-        int loaderID = loader.getId();
-        if(loaderID == MOVIE_LOADER) {
-            if (data != null && !data.equals("")) {
-
-                movieList = new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList);
-
-                parseJsonDataView(movieList);
-            }
-            else {
-                showErrorMessage();
-            }
-        }
-        if(loaderID == MOVIE_LOADER_PAGE) {
-            if (data != null && !data.equals("")) {
-
-                movieList.addAll(new ArrayList<>(boxOfficeMovies.parseJSON(data).movieList));
-
-                parseJsonDataView(movieList);
-
-                isLoadPage = false;
-            }
-            else {
-                showErrorMessage();
-            }
-        }
-
-    }
-
-    @Override
-    public void onLoaderReset(Loader<String> loader) {
-
-    }
+//    @Override
+//    public void onSaveInstanceState(Bundle outState) {
+//        //outState.putParcelableArrayList("savedMovies", movieList);
+//        super.onSaveInstanceState(outState);
+//    }
+//
+//    @Override
+//    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+//        super.onRestoreInstanceState(savedInstanceState);
+//
+//        if(savedInstanceState == null || !savedInstanceState.containsKey("savedMovies")) {
+//           // movieList = new ArrayList<>();
+//        }
+//        else {
+//           // movieList = savedInstanceState.getParcelableArrayList("savedMovies");
+//        }
+//    }
 
     private void showErrorMessage()
     {
         Toast.makeText(this, "Please check your network" + "\n" + "Could not load data", Toast.LENGTH_LONG).show();
     }
 
-    private void parseJsonDataView(ArrayList<Movies> data)
-    {
-        movieAdapter.setData(data);
-    }
-
-    private void launchDetailActivity(int i)
+    /**
+     * We made load details activity to accept null and either take
+     * movies.results to populated details view or using moviesRoom to
+     * populate details view
+     * @param movie Movies.Result
+     * @param moviesRoom MoviesRooom
+     */
+    private void launchDetailActivity(@Nullable Movies.Results movie,@Nullable MoviesRoom moviesRoom)
     {
         Intent intent = new Intent(this , DetailsActivity.class);
-        intent.putExtra(ID,movieList.get(i).getmId());
-        intent.putExtra(TITLE, movieList.get(i).getmTitle());
 
-        if(load_Type == 1)intent.putExtra(POSTER, movieList.get(i).getmPoster_path());
-        else intent.putExtra(POSTER, movieList.get(i).getmPoster());
+        if(movie != null) {
+            intent.putExtra(ID, movie.getmId());
+            intent.putExtra(TITLE, movie.getmTitle());
+            //if (load_Type == 1) intent.putExtra(POSTER, movie.getmPoster_path());
+            //else intent.putExtra(POSTER, movie.getmPoster());
 
-        intent.putExtra(OVERVIEW, movieList.get(i).getmOverview());
-        intent.putExtra(RELEASE, movieList.get(i).getmRelease_date());
-        intent.putExtra(AVERAGE, movieList.get(i).getmVote_average());
-        intent.putExtra(LOAD_TYPE, load_Type);
-        startActivity(intent);
+            intent.putExtra(POSTER, movie.getmPoster_path());
+            intent.putExtra(OVERVIEW, movie.getmOverview());
+            intent.putExtra(RELEASE, movie.getmRelease_date());
+            intent.putExtra(AVERAGE, movie.getmVote_average());
+            intent.putExtra(LOAD_TYPE, load_Type);
+            startActivity(intent);
+           // return;
+        }
+        else if(moviesRoom != null)
+        {
+            intent.putExtra(ID, String.valueOf(moviesRoom.getKey()));
+            intent.putExtra(TITLE, moviesRoom.getTitle());
+            intent.putExtra(POSTER, moviesRoom.getPoster_path());
+            intent.putExtra(OVERVIEW, moviesRoom.getOverview());
+            intent.putExtra(RELEASE, moviesRoom.getRelease_date());
+            intent.putExtra(AVERAGE, moviesRoom.getVote_average());
+            intent.putExtra(LOAD_TYPE, load_Type);
+            startActivity(intent);
+          //  return;
+        }
 
     }
 
 
     private void showEmptyMessage() {
-
         Toast.makeText(this, "Favorites is empty", Toast.LENGTH_LONG).show();
     }
 
@@ -443,16 +330,25 @@ public class MainActivity extends  AppCompatActivity implements
 
 
 
-    @Override
-    protected void onRestart() {
-        super.onRestart();
+//    @Override
+//    protected void onRestart() {
+//        super.onRestart();
+//
+//        //if(load_Type == 2)
+//        //{
+//         //   startFavoriteLoader();
+//        //}
+//    }
 
-        if(load_Type == 2)
-        {
-            startFavoriteLoader();
-        }
+
+    @Override
+    public void onListItemClick(MoviesRoom movie) {
+        launchDetailActivity(null, movie);
     }
 
-
-
+    @Override
+    public void onListItemClick(Movies.Results result)
+    {
+        launchDetailActivity(result, null);
+    }
 }

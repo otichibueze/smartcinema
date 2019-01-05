@@ -1,29 +1,32 @@
-package com.chibusoft.smartcinema;
+package com.chibusoft.smartcinema.Adapters;
 
 
+import android.arch.paging.PagedListAdapter;
 import android.content.Context;
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import com.chibusoft.smartcinema.Adapters.MoviesAdapter.MoviesViewHolder;
+import com.chibusoft.smartcinema.MainActivity;
+import com.chibusoft.smartcinema.Models.Movies.Results;
+import com.chibusoft.smartcinema.R;
 import com.squareup.picasso.Picasso;
-
 import java.io.File;
-import java.util.ArrayList;
+
 
 
 /**
  * Created by EBELE PC on 4/1/2018.
  */
 
-public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesViewHolder>  {
+public class MoviesAdapter extends PagedListAdapter<Results, MoviesViewHolder> {
 
 
     private static final String TAG = MoviesAdapter.class.getSimpleName();
-
-    private ArrayList<Movies> mMovieList;
 
     private Context mContext;
 
@@ -31,21 +34,30 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
 
     public interface ItemClickListener{
 
-        void onListItemClick(int clickedItemIndex);
+        void onListItemClick(Results movie);
     }
 
-
-    public MoviesAdapter(Context context, ArrayList<Movies> movies,ItemClickListener listener) {
-        mMovieList = movies;
+        //ArrayList<Movies> movies,
+        public MoviesAdapter(Context context, ItemClickListener listener) {
+        super(DIFF_CALLBACK);
+       // mMovieList = movies;
         mContext = context;
         mOnCLickListener = listener;
     }
 
-//    public MoviesAdapter(Activity context, List<Movies> movies) {
-//
-//        super(context, 0, movies);
-//
-//    }
+
+    private static DiffUtil.ItemCallback<Results> DIFF_CALLBACK =
+            new DiffUtil.ItemCallback<Results>() {
+                @Override
+                public boolean areItemsTheSame(Results oldItem, Results newItem) {
+                    return oldItem.getmId() == newItem.getmId();
+                }
+
+                @Override
+                public boolean areContentsTheSame(Results oldItem, Results newItem) {
+                    return oldItem.equals(newItem);
+                }
+            };
 
 
     @Override
@@ -66,14 +78,6 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
         holder.bind(position);
     }
 
-    @Override
-    public int getItemCount() {
-        if(mMovieList == null) return  0;
-
-        int mItems = mMovieList.size();
-
-       return mItems;
-    }
 
 
     class MoviesViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
@@ -89,12 +93,14 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
             itemView.setOnClickListener(this);
         }
 
+
         void bind(int index) {
             //Set iconView from picasso
+            Results movies = getItem(index);
 
             if(MainActivity.load_Type == 1) {
                 Picasso.with(mContext)
-                        .load(mMovieList.get(index).getmPoster_path())
+                        .load(movies.getmPoster_path())
                         .placeholder(R.drawable.loadingmage)
                         .error(R.drawable.errorimage)
                         .into(iconView);
@@ -102,7 +108,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
             else
             {
                 Picasso.with(mContext)
-                        .load(new File(mMovieList.get(index).getmPoster()))
+                        .load(new File(movies.getmPoster()))
                         .placeholder(R.drawable.loadingmage)
                         .error(R.drawable.errorimage)
                         .into(iconView);
@@ -112,15 +118,14 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.MoviesView
         @Override
         public void onClick(View view)
         {
+            //There is no need passing in clicked position with page library
+            //instead get the class and pass and instance
             int clickedPosition = getAdapterPosition();
-            mOnCLickListener.onListItemClick(clickedPosition);
+            Results movies = getItem(clickedPosition);
+            mOnCLickListener.onListItemClick(movies);
         }
 
     }
 
-    public void setData(ArrayList<Movies> movies) {
-        mMovieList = movies;
-        notifyDataSetChanged();
-    }
 }
 

@@ -8,12 +8,17 @@ import android.arch.persistence.room.OnConflictStrategy;
 import android.arch.persistence.room.Query;
 import android.arch.persistence.room.Update;
 import java.util.List;
+import android.arch.paging.DataSource;
+
 
 @Dao
 public interface MoviesDao {
 
     @Query("SELECT * FROM movies ORDER BY id")
     LiveData<List<MoviesRoom>> loadAllMovies();
+
+    @Query("SELECT * FROM movies ORDER BY id")
+    DataSource.Factory<Integer,MoviesRoom> loadAllMoviesFactory();
 
     @Insert
     void insertMovies(MoviesRoom moviesRoom);
@@ -27,6 +32,9 @@ public interface MoviesDao {
 
     @Query("Delete FROM movies WHERE `key` = :id")
     void DeleteMovieById(int id);
+
+    @Query("SELECT COUNT(`key`) FROM movies")
+    int GetCount();
 
     @Query("SELECT * FROM movies WHERE `key` = :id")
     LiveData<MoviesRoom> loadMovieById(int id);

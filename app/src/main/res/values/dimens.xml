@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="moviewidth">185dp</dimen>
-    <dimen name="movieheight">278dp</dimen>
-    <dimen name="gridwidth">150dp</dimen>
+    <dimen name="moviewidth">192dp</dimen>
+    <dimen name="movieheight">280dp</dimen>
+    <dimen name="gridwidth">144dp</dimen>
     <dimen name="vspacing">0dp</dimen>
     <dimen name="hspacing">0dp</dimen>
-    <dimen name="text_margin">10dp</dimen>
-    <dimen name="movie_frame_margin">2dp</dimen>
-    <dimen name="text_bottom_margin">10dp</dimen>
+    <dimen name="text_margin">8dp</dimen>
+    <dimen name="movie_frame_margin">8dp</dimen>
+    <dimen name="text_bottom_margin">12dp</dimen>
     <dimen name="text_size_meduim">16sp</dimen>
     <dimen name="text_size_large">20sp</dimen>
-    <dimen name="text_size_largest">30sp</dimen>
+    <dimen name="text_size_largest">32sp</dimen>
 </resources>

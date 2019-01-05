@@ -1,4 +1,4 @@
-package com.chibusoft.smartcinema;
+package com.chibusoft.smartcinema.Adapters;
 
 import android.app.Activity;
 import android.view.LayoutInflater;
@@ -7,17 +7,20 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import com.chibusoft.smartcinema.Models.MovieVideos.Results;
+import com.chibusoft.smartcinema.R;
+
 import java.util.List;
 
 /**
  * Created by EBELE PC on 4/18/2018.
  */
 
-public class MovieVideosAdapter extends ArrayAdapter<MovieVideos> {
+public class MovieVideosAdapter extends ArrayAdapter<Results> {
 
     private static final String LOG_TAG = MovieVideosAdapter.class.getSimpleName();
 
-    public MovieVideosAdapter(Activity context, List<MovieVideos> movieVideos) {
+    public MovieVideosAdapter(Activity context, List<Results> movieVideos) {
         // Here, we initialize the ArrayAdapter's internal storage for the context and the list.
         // the second argument is used when the ArrayAdapter is populating a single TextView.
         // Because this is a custom adapter for two TextViews and an ImageView, the adapter is not
@@ -28,7 +31,7 @@ public class MovieVideosAdapter extends ArrayAdapter<MovieVideos> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Gets the AndroidFlavor object from the ArrayAdapter at the appropriate position
-        MovieVideos movieVideo = getItem(position);
+        Results movieVideo = getItem(position);
 
         // Adapters recycle views to AdapterViews.
         // If this is a new View object we're getting, then inflate the layout.
@@ -42,7 +45,7 @@ public class MovieVideosAdapter extends ArrayAdapter<MovieVideos> {
 
         TextView trailerItem = convertView.findViewById(R.id.trailer_text);
         int num = position + 1;
-        trailerItem.setText(movieVideo.type + "  " + num);
+        trailerItem.setText(movieVideo.getType() + "  " + num);
 
 
         return convertView;
