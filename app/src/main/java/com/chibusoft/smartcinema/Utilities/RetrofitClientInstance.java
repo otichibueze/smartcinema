@@ -11,7 +11,6 @@ public class RetrofitClientInstance {
 
     private RetrofitClientInstance() {
 
-      //  boxOfficeMovies = new BoxOfficeMovies();
         retrofit = new retrofit2.Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())

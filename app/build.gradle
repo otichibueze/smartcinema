@@ -28,16 +28,49 @@ dependencies {
     def room_version = "1.1.1";
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+
     implementation 'com.android.support:appcompat-v7:27.1.0'
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+    //androidTestImplementation 'com.android.support.test:runner:1.0.1'
+    //androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
+
+
+    // Testing-only dependencies
+    implementation 'com.android.support:support-annotations:27.1.0'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-intents:3.0.2'
+    androidTestImplementation 'com.android.support.test:rules:0.5'
+    implementation 'com.android.support.test.espresso:espresso-idling-resource:3.0.2'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation 'com.android.support:support-annotations:27.1.1'
+
+    androidTestImplementation("com.android.support.test.espresso:espresso-contrib:2.2.2") {
+        exclude group: 'com.android.support', module: 'appcompat'
+        exclude group: 'com.android.support', module: 'support-v4'
+        exclude group: 'com.android.support', module: 'support-v7'
+        exclude group: 'com.android.support', module: 'design'
+        exclude module: 'support-annotations'
+        exclude module: 'recyclerview-v7'
+    }
+
+
+    //Constrain Layout
+    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+
+    //Picasso
     implementation 'com.squareup.picasso:picasso:2.5.2'
+
+    //ButterKnive
     implementation 'com.jakewharton:butterknife:8.8.1'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.5.1'
+
+    //Shared Preference
     implementation 'com.android.support:preference-v7:27.1.0'
+
+    //Gson
     implementation 'com.google.code.gson:gson:2.8.0'
+
+    //RecycleView
     implementation 'com.android.support:recyclerview-v7:27.1.0'
 
     //Room dependencies

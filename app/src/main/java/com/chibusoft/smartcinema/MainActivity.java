@@ -8,7 +8,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.res.Configuration;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.idling.CountingIdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.preference.PreferenceManager;
@@ -71,13 +74,10 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
 
     public final static String KEY = BuildConfig.MY_MOVIE_DB_API_KEY;
 
-   // private BoxOfficeMovies boxOfficeMovies;
+    @Nullable
+    private CountingIdlingResource mIdlingResource= new CountingIdlingResource("Loading_Data");
 
     public int page = 1;
-
-    //public boolean isLoadPage = false;
-
-   // private GridLayoutManager gridLayoutManager;
 
     public SharedPreferences sharedPreference;
 
@@ -93,6 +93,8 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
         setContentView(R.layout.activity_main);
 
         instance = this;
+
+        getIdlingResource();
 
         //Initialize member variable for the data base
         mDb = AppDatabase.getInstance(getApplicationContext());
@@ -112,21 +114,6 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
         //We set this to true to allows recyclerView to do optimization on our UI
         mMovie_RV.setHasFixedSize(true);
 
-
-        //From step 5
-        //TODO i removed
-//         movieViewModel = ViewModelProviders.of(this).get(MovieViewModel.class);
-//
-//        movieViewModel.MoviePagedList.observe(this, new Observer<PagedList<Movies.Results>>() {
-//            @Override
-//            public void onChanged(@Nullable PagedList<Movies.Results> moviesList) {
-//                adapter.submitList(moviesList);
-//            }
-//        });
-//
-//        mMovie_RV.setAdapter(adapter);
-//
-//
 //        //Create shared preference
         setupSharedPreferences();
 
@@ -249,25 +236,6 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
     }
 
 
-
-//    @Override
-//    public void onSaveInstanceState(Bundle outState) {
-//        //outState.putParcelableArrayList("savedMovies", movieList);
-//        super.onSaveInstanceState(outState);
-//    }
-//
-//    @Override
-//    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-//        super.onRestoreInstanceState(savedInstanceState);
-//
-//        if(savedInstanceState == null || !savedInstanceState.containsKey("savedMovies")) {
-//           // movieList = new ArrayList<>();
-//        }
-//        else {
-//           // movieList = savedInstanceState.getParcelableArrayList("savedMovies");
-//        }
-//    }
-
     private void showErrorMessage()
     {
         Toast.makeText(this, "Please check your network" + "\n" + "Could not load data", Toast.LENGTH_LONG).show();
@@ -330,17 +298,6 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
 
 
 
-//    @Override
-//    protected void onRestart() {
-//        super.onRestart();
-//
-//        //if(load_Type == 2)
-//        //{
-//         //   startFavoriteLoader();
-//        //}
-//    }
-
-
     @Override
     public void onListItemClick(MoviesRoom movie) {
         launchDetailActivity(null, movie);
@@ -350,5 +307,11 @@ public class MainActivity extends  AppCompatActivity implements OnSharedPreferen
     public void onListItemClick(Movies.Results result)
     {
         launchDetailActivity(result, null);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public CountingIdlingResource getIdlingResource() {
+        return mIdlingResource;
     }
 }

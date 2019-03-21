@@ -33,14 +33,13 @@ public class MoviesAdapter extends PagedListAdapter<Results, MoviesViewHolder> {
     private final ItemClickListener mOnCLickListener;
 
     public interface ItemClickListener{
-
         void onListItemClick(Results movie);
     }
 
-        //ArrayList<Movies> movies,
-        public MoviesAdapter(Context context, ItemClickListener listener) {
+
+    public MoviesAdapter(Context context, ItemClickListener listener) {
         super(DIFF_CALLBACK);
-       // mMovieList = movies;
+
         mContext = context;
         mOnCLickListener = listener;
     }
@@ -57,7 +56,7 @@ public class MoviesAdapter extends PagedListAdapter<Results, MoviesViewHolder> {
                 public boolean areContentsTheSame(Results oldItem, Results newItem) {
                     return oldItem.equals(newItem);
                 }
-            };
+    };
 
 
     @Override

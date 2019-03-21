@@ -2,6 +2,9 @@ package com.chibusoft.smartcinema.Architecture;
 
 import android.arch.paging.PageKeyedDataSource;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.idling.CountingIdlingResource;
 import android.widget.Toast;
 import com.chibusoft.smartcinema.MainActivity;
 import com.chibusoft.smartcinema.Models.Movies;
@@ -23,6 +26,8 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
     public void loadInitial(@NonNull LoadInitialParams<Integer> params, @NonNull final LoadInitialCallback<Integer, Movies.Results> callback) {
 
 
+       MainActivity.getInstance().getIdlingResource().increment();
+
         RetrofitClientInstance.getInstance()
                 .getApi()
                 .getMovies(sort,MainActivity.KEY,FIRST_PAGE) //here we applied sort type
@@ -35,13 +40,14 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
 
                             //call back must be returned
                             callback.onResult(movies.results,null, FIRST_PAGE + 1);
+                            MainActivity.getInstance().getIdlingResource().decrement();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Movies> call, Throwable t) {
                         Toast.makeText(MainActivity.getInstance(), "Something went wrong...Please try later!", Toast.LENGTH_SHORT).show();
-
+                        MainActivity.getInstance().getIdlingResource().decrement();
                     }
                 });
 
@@ -50,6 +56,7 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
     @Override
     public void loadBefore(@NonNull final LoadParams<Integer> params, @NonNull final LoadCallback<Integer, Movies.Results> callback) {
 
+        MainActivity.getInstance().getIdlingResource().increment();
 
         RetrofitClientInstance.getInstance()
                 .getApi()
@@ -64,12 +71,14 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
                             Integer key = (params.key > 1) ? params.key - 1 : null;
 
                             callback.onResult(response.body().results,  key);
+                            MainActivity.getInstance().getIdlingResource().decrement();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Movies> call, Throwable t) {
                         Toast.makeText(MainActivity.getInstance(), "Something went wrong...Please try later!", Toast.LENGTH_SHORT).show();
+                        MainActivity.getInstance().getIdlingResource().decrement();
                     }
                 });
     }
@@ -77,7 +86,7 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
     @Override
     public void loadAfter(@NonNull final LoadParams<Integer> params, @NonNull final LoadCallback<Integer, Movies.Results> callback) {
 
-       // final Integer key = params.key + 1;
+        MainActivity.getInstance().getIdlingResource().increment();
 
         RetrofitClientInstance.getInstance()
                 .getApi()
@@ -90,14 +99,18 @@ public class MovieDataSource extends PageKeyedDataSource<Integer, Movies.Results
 
                             Integer key = params.key < response.body().total_pages ? params.key + 1 : null;
                             callback.onResult(response.body().results,  key);
+                            MainActivity.getInstance().getIdlingResource().decrement();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<Movies> call, Throwable t) {
                         Toast.makeText(MainActivity.getInstance(), "Something went wrong...Please try later!", Toast.LENGTH_SHORT).show();
+                        MainActivity.getInstance().getIdlingResource().decrement();
 
                     }
                 });
     }
+
+
 }

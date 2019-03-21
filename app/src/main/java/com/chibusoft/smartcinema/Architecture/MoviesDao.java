@@ -18,6 +18,9 @@ public interface MoviesDao {
     LiveData<List<MoviesRoom>> loadAllMovies();
 
     @Query("SELECT * FROM movies ORDER BY id")
+    List<MoviesRoom> loadAllMoviesTest();
+
+    @Query("SELECT * FROM movies ORDER BY id")
     DataSource.Factory<Integer,MoviesRoom> loadAllMoviesFactory();
 
     @Insert
