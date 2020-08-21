@@ -1,6 +1,5 @@
 # SMART MOVIE
 
-This project is created under Google Udacity Android Developer Nanodegree.
 
 **This is part 1 and part 2 of the Popular Movies App**
 
